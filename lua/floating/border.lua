@@ -1,6 +1,12 @@
 --local tbl = require('plenary.tbl')
 
+local log = require'log1'
+
+
+
 local Border = {}
+
+
 
 Border.__index = Border
 
@@ -79,21 +85,6 @@ function Border._create_lines(content_win_options, border_win_options)
 end
 
 
-local function transform_content_win_to_border_win_opts(content_win_opts, border_opts)
-  local thickness = border_opts.border_thickness
-
-local border_win_opts = {
-    anchor = content_win_opts.anchor,
-    relative = content_win_opts.relative,
-    style = "minimal",
-    row = content_win_opts.row - thickness.top,
-    col = content_win_opts.col - thickness.left,
-    width = content_win_opts.width + thickness.left + thickness.right,
-    height = content_win_opts.height + thickness.top + thickness.bot,
-    focusable = false
-  }
-return border_win_opts
-end
 
 
 
@@ -104,10 +95,122 @@ return obj
 end
 
 
+function Border:calculate(content_win_opts, border_opts)
+  local thickness = border_opts.border_thickness
+
+local border_win_opts = {
+    anchor = content_win_opts.anchor,
+    relative = content_win_opts.relative,
+    style = "minimal",
+    row = content_win_opts.row - thickness.top,
+    col = content_win_opts.col - thickness.left,
+    width = content_win_opts.width + thickness.left + thickness.right,
+    height = content_win_opts.height + thickness.top + thickness.bot,
+    focusable = false,
+    win = content_win_opts.win
+  }
+return border_win_opts
+
+end
 
 
 
-function Border:open(win_self, one_two, single_dual)
+function Border:redraw_all(win_self)
+vim.schedule_wrap(function()
+ if win_self then self = win_self.border end
+--lo('self at border redraw all is: ')
+--log.info(win_self)
+
+-- for main window resizing autocmd like
+
+if win_self.bufnr.one_border ~= nil and win_self.custom_opts.dual == false then
+self:redraw_single(win_self, 'one', false, win_self.total_opts)
+--lo('redraw all: picked total opts')
+end
+if win_self.bufnr.one_border ~= nil and win_self.custom_opts.dual == true then
+self:redraw_single(win_self, 'one', true, win_self.one_opts)
+--lo('redraw all: picked one opts')
+end
+if win_self.bufnr.two_border ~= nil and win_self.custom_opts.dual == true then
+--  lo('redraw all: picked two opts')
+self:redraw_single(win_self, 'two', true, win_self.two_opts)
+end
+
+
+-- for k,v in pairs({ one_border = win_self.bufnr.one_border, two_border = win_self.bufnr.two_border }) do
+-- if k == 'one_border' and win_self.custom_opts.dual == false then
+-- self:redraw_single(win_self, 'one', false)
+-- elseif k == 'one_border' and win_self.custom_opts.dual == true then
+-- self:redraw_single(win_self, 'one', true)
+-- elseif k == 'two_border' and win_self.custom_opts.dual == true then
+-- self:redraw_single(win_self, 'two', true)
+--end
+--end
+end)
+end
+
+function Border:redraw_single(win_self, one_two, single_dual, content_win_opts)
+--lo('REDRAW redraw_single')
+-- redraw - for first window opening, and auto grow
+-- if win_self then self = win_self end
+
+
+local border_opts = win_self[one_two .. '_border_opts']
+local border_bufnr = win_self.bufnr[one_two .. '_border']
+--lo('self at border redraw single is: ')
+--lo(win_self)
+
+
+-- local content_win_opts
+-- if single_dual == false then
+-- lo('picked total_opts')
+-- content_win_opts = win_self.total_opts
+-- elseif one_two == 'one' and single_dual == true then
+-- content_win_opts = win_self.one_opts
+-- lo('picked one opts')
+-- elseif one_two == 'two' and single_dual == true then
+-- content_win_opts = win_self.two_opts
+-- lo('picked two opts')
+-- end
+
+
+
+local border_contents = Border._create_lines(content_win_opts, border_opts)
+--lo(content_win_opts)
+local border_win_opts = win_self.border:calculate(content_win_opts, border_opts)
+
+
+local border_winnr = win_self.winnr[one_two .. '_border']
+--if vim.api.nvim_win_is_valid(border_winnr) == true then
+ -- lo('chose nvim win set config. border winnr exists')
+--lo('GOT HERE')
+-- lo(border_winnr)
+-- lo(win_self)
+
+
+
+if border_winnr ~= nil then 
+ -- lo('nvim win set config trig')
+vim.api.nvim_win_set_config(border_winnr, border_win_opts) -- do this when doing autogrow
+end
+
+vim.schedule(function() 
+
+--lo('schedule WRAP TRIGERRED')
+  vim.api.nvim_buf_set_lines(border_bufnr, 0, -1, false, border_contents) 
+
+end)
+
+
+return border_win_opts
+end
+
+
+
+
+function Border:open_single(win_self, one_two, single_dual)
+  if win_self then self = win_self end
+
 local border_opts = win_self[one_two .. '_border_opts']
 
 
@@ -118,27 +221,23 @@ elseif single_dual == true then
 content_win_opts = win_self.total_opts
 end
 
- local bufnr_border = vim.api.nvim_create_buf(false, true)
- win_self.bufnr[one_two .. '_border'] = bufnr_border
+ local border_bufnr = vim.api.nvim_create_buf(false, true)
+ win_self.bufnr[one_two .. '_border'] = border_bufnr
 
- -- assert(obj.bufnr, "Failed to create border buffer")
-  vim.api.nvim_buf_set_option(bufnr_border, "bufhidden", "wipe")
+  vim.api.nvim_buf_set_option(border_bufnr, "bufhidden", "wipe")
+
+
 
  local border_contents = Border._create_lines(content_win_opts, border_opts)
-  vim.api.nvim_buf_set_lines(bufnr_border, 0, -1, false, border_contents)
+ vim.api.nvim_buf_set_lines(border_bufnr, 0, -1, false, border_contents)
+local border_win_opts = win_self.border:calculate(content_win_opts, border_opts)
 
 
 
--- lo('border content win opts: ')
--- lo(content_win_options.relative)
-
-local border_win_opts = transform_content_win_to_border_win_opts(content_win_opts, border_opts)
-
-
-win_self.winnr[one_two .. '_border'] = vim.api.nvim_open_win(bufnr_border, false, border_win_opts)
-
-
---win_self.winnr[objorlog .. '_border'] = vim.api.nvim_open_win(win_self.bufnr[objorlog .. '_border'], false, win_self[objorlog .. '_opts'])
+--local border_win_opts = Border:redraw_single(win_self, one_two, single_dual)
+-- duplicate in redraw_all
+--lo(border_win_opts)
+win_self.winnr[one_two .. '_border'] = vim.api.nvim_open_win(border_bufnr, false, border_win_opts)
 
 
 
@@ -146,13 +245,7 @@ win_self.winnr[one_two .. '_border'] = vim.api.nvim_open_win(bufnr_border, false
 
 end
 
-function Border:refresh(win_self, one_two)
 
---  obj.contents = Border._create_lines(content_win_options, border_win_options)
---  vim.api.nvim_buf_set_lines(obj.bufnr, 0, -1, false, obj.contents)
--- then nvim win set config instead of nvim win open
-
-end
 
 
 return Border
