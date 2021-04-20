@@ -8,5 +8,6 @@ local Config = require'floating/config'
 
 return {
   open = window.open,
-  config = Config.setup
+  config = Config.setup,
+  close_all = window.close_all_views
 }

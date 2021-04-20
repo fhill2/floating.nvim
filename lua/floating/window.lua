@@ -26,26 +26,47 @@ Window.__index = Window
 
   
 function Window:new(opts)
---lo(opts)
--- ============================================= OPTS =================================================
 opts = opts or {}
+
+--lo(toggle)
+--- ============= TOGGLE WALL/BLOCK ===============
+-- if toggle then
+-- for k, v in pairs(state.views) do
+--  -- lo(tostring(opts))
+--  -- lo(opts)
+--   --lo(tostring(v.setup_opts))
+--  -- lo(v.setup_opts)
+-- if vim.inspect(opts) == vim.inspect(v.setup_opts) then 
+-- lo('MATCHED!!!!')
+--   state.views[k]:close(state.views[k]) 
+--   return
+
+-- end
+-- end
+-- end
+
+setup_opts = vim.deepcopy(opts)
+
+-- ============================================= OPTS =================================================
 -- otherwise obj & log padding get_defaults nil error
 opts.margin = opts.margin or {}
 opts.two_margin = opts.two_margin or {}
 
-action = opts.action
+actions = {
+action = opts.action,
+two_action = opts.two_action
+}
 
 custom_opts = {
-show_border = get_default(opts.show_border, config.defaults.show_border),
+border = get_default(opts.border, config.defaults.border),
 border_thickness = get_default(opts.border_thickness, config.defaults.border_thickness),
 borderchars = get_default(opts.borderchars, config.defaults.borderchars),
-one_border_title = get_default(opts.one_title, config.defaults.one_border_title),
-two_border_title = get_default(opts.two_title, config.defaults.two_border_title),
+title = get_default(opts.title, config.defaults.title),
+two_title = get_default(opts.two_title, config.defaults.two_title),
 x = get_default(opts.x, config.defaults.x),
  y = get_default(opts.y, config.defaults.y),
 layout = get_default(opts.layout, config.defaults.layout),
 pin = get_default(opts.pin, config.defaults.pin),
-center = get_default(opts.center, config.defaults.center),
 dual = get_default(opts.dual, config.defaults.dual),
 grow = get_default(opts.grow, config.defaults.grow),
 two_grow = get_default(opts.two_grow, config.defaults.two_grow),
@@ -58,7 +79,7 @@ split = get_default(opts.split, config.defaults.split),
 gap = get_default(opts.gap, config.defaults.gap),
 content_height = get_default(opts.content_height, config.defaults.content_height),
 two_content_height = get_default(opts.two_content_height, config.defaults.two_content_height),
-enter = get_default(opts.enter, config.defaults.enter)
+enter = get_default(opts.enter, config.defaults.enter),
 }
 
 
@@ -82,8 +103,8 @@ get_default(opts.two_margin.left, 1),
 }
 end
 
-if not vim.tbl_islist(opts.padding) then
-custom_opts.padding = { 
+if not vim.tbl_islist(opts.margin) then
+custom_opts.margin = { 
 top = get_default(opts.margin.top, 1),
 right = get_default(opts.margin.right, 1),
 bottom = get_default(opts.margin.bottom, 1),
@@ -105,7 +126,7 @@ end
 
 
 
--- VALIDATE BORDER OPTS snd save back to custom_opts
+-- VALIDATE BORDER OPTS and save back to custom_opts
 
 local border_default_thickness = {
   top = 1,
@@ -115,8 +136,7 @@ local border_default_thickness = {
 }
    local border_options = {}
 
-
-  if custom_opts.show_border then
+  if custom_opts.border then
     if type(custom_opts.border_thickness) == 'boolean' or vim.tbl_isempty(custom_opts.border_thickness) then
       border_options.border_thickness = border_default_thickness
     elseif #custom_opts.border_thickness == 4 then
@@ -146,8 +166,9 @@ local border_default_thickness = {
       b_top , b_right , b_bot , b_left , b_topleft , b_topright , b_botright , b_botleft = unpack(custom_opts.borderchars)
     else
       error(string.format('Not enough arguments for "borderchars"'))
-    end
+  end
 
+  
     border_options.top = b_top
     border_options.bot = b_bot
     border_options.right = b_right
@@ -161,12 +182,8 @@ local border_default_thickness = {
 custom_opts.borderchars = border_options.borderchars
 custom_opts.border_thickness = border_options.border_thickness
 
-one_border_opts = vim.tbl_extend('keep', border_options, { title = get_default(opts.one_border_title, config.defaults.one_border_title)})
-two_border_opts = vim.tbl_extend('keep', border_options, { title = get_default(opts.two_border_title, config.defaults.two_border_title)})
-
-
-
-
+one_border_opts = vim.tbl_extend('keep', border_options, { title = get_default(opts.title, config.defaults.title)})
+two_border_opts = vim.tbl_extend('keep', border_options, { title = get_default(opts.two_title, config.defaults.two_title)})
 
 
 
@@ -175,8 +192,15 @@ total_opts_init = {
   height = get_default(opts.height, config.defaults.height),
   relative = get_default(opts.relative, config.defaults.relative),
   anchor = 'NW',
- style = get_default(opts.style, config.defaults.style)
  } 
+
+local style = get_default(opts.style, config.defaults.style)
+--lo('style is: ')
+--lo(style)
+if style then total_opts_init.style = 'minimal' end
+
+--lo(total_opts_init)
+
 
 
 
@@ -194,21 +218,23 @@ assert(total_opts_init.height > 0, 'LTL ERROR: view height needs to be 0 - 1 num
 
 
 
--- decide max_col, max_row dependant on win or global, for pin
-if total_opts_init.relative == 'editor' then
-custom_opts.max_col = vim.o.columns
-custom_opts.max_row = vim.o.lines
+
+--lo(setup_opts)
+
+local border
+if custom_opts.border then
+border = Border:new()
 end
 
-
-
-
 return setmetatable({
+setup_opts = setup_opts,
+setup_opts_pointer = tostring(setup_opts),
 one_border_opts = one_border_opts,
 two_border_opts = two_border_opts,
 custom_opts = custom_opts,
+border = border,
 total_opts_init = total_opts_init,
-border = Border:new(),
+actions = actions
 } , self)
 end
 
@@ -227,7 +253,6 @@ function Window:calculate(win_self)
 
 if win_self then win_self = self end
 
---Window:refresh_data(self)
 total_opts = vim.deepcopy(self.total_opts_init)
 custom_opts = self.custom_opts
 
@@ -235,15 +260,19 @@ custom_opts = self.custom_opts
 
 custom_opts.max_col = nil
 custom_opts.max_row = nil
+-- decide max_col, max_row dependant on win or global, for pin
+if total_opts_init.relative == 'editor' then
+custom_opts.max_col = vim.o.columns
+custom_opts.max_row = vim.o.lines
+else
 custom_opts.max_col = vim.api.nvim_call_function('winwidth', {total_opts.win})
 custom_opts.max_row = vim.api.nvim_call_function('winheight', {total_opts.win})
-
+end
 
 -- always center
 local col_start_percentage = (1 - total_opts.width) /2
 local row_start_percentage = (1 - total_opts.height) / 2
 
---lo(custom_opts.max_col)
 
 total_opts.height = math.floor(custom_opts.max_row * total_opts.height)
 total_opts.width = math.floor(custom_opts.max_col * total_opts.width)
@@ -251,26 +280,32 @@ total_opts.col = custom_opts.max_col * col_start_percentage
 total_opts.row = custom_opts.max_row * row_start_percentage
 
 
---lo('total opts width after width calculation')
-
---lo(total_opts.width)
 
 local function apply_pin(colrow, total_opts, custom_opts)
- 
+
+local function is_editor_scoped(total_opts)
+  if total_opts.relative == 'editor' then
+    return true
+    else
+      return false
+    end
+end
+
+
 if custom_opts.pin == nil then return false end
 
 local max_col, max_row = custom_opts.max_col, custom_opts.max_row
 local width, height = total_opts.width, total_opts.height
 
 local choose_pin = {
-top = ternary(colrow,false,0), 
-topright = ternary(colrow, max_col - width, 0),
+top = ternary(colrow,false, ternary(is_editor_scoped(total_opts), 1, 0)), -- change to 1 if relative is editor, 0 if win
+topright = ternary(colrow, max_col - width, ternary(is_editor_scoped(total_opts), 1, 1)),
 right =  ternary(colrow, max_col - width,false), 
-botright = ternary(colrow, max_col - width, max_row - height),
-bot = ternary(colrow,false, max_row - height), -- -1 for statusline
-botleft = ternary(colrow, 0, max_row - height), -- -1 for statusline
+botright = ternary(colrow, max_col - width, ternary(is_editor_scoped(total_opts), max_row - height - 2, max_row - height)),
+bot = ternary(colrow,false, ternary(is_editor_scoped(total_opts), max_row - height - 2, max_row - height)), -- -2 for vim.o.cmdheight and statusline
+botleft = ternary(colrow, 0, ternary(is_editor_scoped(total_opts), max_row - height - 2, max_row - height)),
 left = ternary(colrow,0,false), 
-topleft = ternary(colrow, 0, 0)
+topleft = ternary(colrow, 0, ternary(is_editor_scoped(total_opts), 1, 0))
 }
 return choose_pin[custom_opts.pin]
 end
@@ -284,17 +319,17 @@ total_opts.row = apply_pin(false, total_opts, custom_opts) or total_opts.row
 end
 
 
--- convert xy offset in % to col/row count
+-- TODO: convert xy offset in % to col/row count
 --custom_opts.x = custom_opts.max_col * custom_opts.x
 --custom_opts.y = custom_opts.max_row * custom_opts.y
+
 
 -- add offset
 total_opts.col = total_opts.col - custom_opts.x
 total_opts.row = total_opts.row + custom_opts.y
 
 
-
-
+---  =========================== SPLIT WINDOWS HERE =============================
 if custom_opts.dual == true then
   -- everything in this condition only applies to opening 2 windows at once
 
@@ -363,7 +398,9 @@ two_opts.height = two_opts.height + row_to_move
 end
 end
 
-end -- END IF MULTIPLE WINDOWS
+end -- end if multiple windows
+
+
 
 
 local function apply_margin(win_opts, custom_opts, one_two)
@@ -419,8 +456,7 @@ self.two_opts = two_opts
 end
 self.total_opts = total_opts
 self.custom_opts = custom_opts
--- end calculate
-
+ -- end calculate
 end
 
 
@@ -451,24 +487,18 @@ end
 
 function Window:resize_all(win_self)
 --if win_self then win_self = self end
-lo('RESIZE TRIG')
---lo('self at resize all is')
---log.info(win_self)
-
 
 win_self.calculate(win_self)
-win_self.border:redraw_all(win_self)
 
+if win_self.custom_opts.border then
+win_self.border:redraw_all(win_self)
+end
 
 if win_self.custom_opts.dual == false then
-  lo('resize trig 1')
-
---lo('self total opts width at time of nvim win set config')
 vim.api.nvim_win_set_config(win_self.winnr.one_content, win_self.total_opts)
 
 
 elseif self.custom_opts.dual == true then
- lo('resize trig 2')
 vim.api.nvim_win_set_config(win_self.winnr.one_content, win_self.one_opts)
 vim.api.nvim_win_set_config(win_self.winnr.two_content, win_self.two_opts)
 end
@@ -482,7 +512,7 @@ end
 
 
 function Window:resize_to_height(win_self, one_two, single_dual)
-
+lo('HEIGHT RESIZE RAN')
 
 
 
@@ -524,16 +554,7 @@ content_winnr = win_self.winnr[one_two .. '_content']
 
 height_to_move = current_opts.height - line_count
 
-
-
-
-
-
-
-
-
-
-
+--- OPTS above here
 
 local pin = win_self.custom_opts.pin
 
@@ -549,16 +570,7 @@ topleft = 'down',
 nopin = 'nopin'
 }
 
---local resize_actions = {}
-
 local direction = height_col[pin]
--- if pin == 'bot' or pin == 'botleft' or pin == 'botright' then
---   table.insert(resize_actions, 'height_and_row')
--- elseif pin == 'top' or pin == 'topleft' or pin == 'topright' then
---   table.insert(resize_actions, 'height_only')
--- elseif pin == 'left' or pin == 'right' then
---   table.insert(resize_actions, 'height_only')
--- end
 
 opts_direction = win_self.custom_opts.grow_direction
 
@@ -589,7 +601,9 @@ current_opts.height = line_count
 if one_two == 'one'  and single_dual == false and win_self.custom_opts.layout ~= 'horizontal' then
    other_win_opts.row = other_win_opts.row - height_to_move
 vim.api.nvim_win_set_config(other_content_winnr, other_win_opts)
+if win_self.custom_opts.border then
 win_self.border:redraw_single(win_self, other_win, single_dual, other_win_opts)
+end
 end
   end
 
@@ -603,41 +617,24 @@ current_opts.height = line_count
   if one_two == 'two' and single_dual == false and win_self.custom_opts.layout ~= 'horizontal' then
     lo('this RAN')
   other_win_opts.row = other_win_opts.row + height_to_move
-vim.api.nvim_win_set_config(other_content_winnr, other_win_opts)
+
+  vim.api.nvim_win_set_config(other_content_winnr, other_win_opts)
+  if win_self.custom_opts.border then
 win_self.border:redraw_single(win_self, other_win, single_dual, other_win_opts)
   end
-
+end
   end
 
--- dual window top side pins
--- if action == 'height_only' and single_dual == false then
-
--- current_opts.height = line_count
-
--- end
-
--- dual window bot pins
--- if action == 'height_and_row' and single_dual == false then
---   current_opts.height = line_count
-
--- end
 vim.api.nvim_win_set_config(content_winnr, current_opts)
 
--- write resize modifications back to obj
--- if single_dual == true then
--- win_self.total_opts = win_self.current_opts
--- elseif single_dual == false then
--- win_self[one_two .. '_opts'] = current_opts
--- win_self[other_win .. '_opts'] = other_win_opts
--- end
 
 
 
 
 
---win_self.border:redraw_all(win_self)
-
+if win_self.custom_opts.border then
 win_self.border:redraw_single(win_self, one_two, single_dual, current_opts)
+end
 
 end
 
@@ -685,43 +682,56 @@ end
 self.name = name
 
 
-
+if self.custom_opts.border then
 self.border:open_single(self, one_two, single_dual)
-
+end
 
 self.winnr[one_two .. '_content'] = contents_winnr
 
 vim.api.nvim_win_set_option(contents_winnr, 'winblend', get_default(self.custom_opts.winblend, config.defaults.winblend))
 
-
-
-
--- work out grow side if pin isnt 
---if pin == false or pin == right or pin == left
-
-
-
  local on_win_closed = string.format(
     [[  autocmd WinClosed <buffer> ++nested ++once :silent lua require('floating/window').on_win_closed('%s')]],
-    name)
+    self.setup_opts_pointer)
 
+ -- vim.cmd([[augroup FloatingWinClosed]])
+ -- vim.cmd([[  au!]])
+ -- vim.cmd([[augroup END]])
 
 
 
 
 vim.api.nvim_buf_call(contents_bufnr, function()
- 
-  vim.cmd([[augroup FloatingWinClosed]])
-  vim.cmd([[  au!]])
+
   vim.cmd(    on_win_closed)
-  vim.cmd([[augroup END]])
 
-vim.cmd('setlocal nocursorcolumn')
 
-config.action_presets[action[1]](contents_bufnr, contents_winnr, action[2], action[3])
+
+
+local action
+if one_two == 'one' then
+  action = actions.action
+else action = actions.two_action end
+
+--lo('START of config function call ')
+
+if type(action) == 'table' then
+  if config.user_action_presets[action[1]] then
+config.user_action_presets[action[1]](contents_bufnr, contents_winnr, action[2], action[3])
+  elseif config.default_action_presets[action[1]] then
+
+config.default_action_presets[action[1]](contents_bufnr, contents_winnr, action[2], action[3])
+
+    else
+    assert(false, 'action not found in action preset table. Add action inside config action_presets table underneath defaults.')
+    end
+elseif type(action) == 'function' then 
+  action(contents_bufnr, contents_winnr)
+end
 
 end)
 
+--lo('THIS STILL RAN')
 
 
 
@@ -779,7 +789,7 @@ if type(enter) == 'boolean' and enter == true then
 vim.api.nvim_set_current_win(self.winnr.one_win)
 elseif type(enter) == 'string' and enter == 'one' then
 vim.api.nvim_set_current_win(self.winnr.one_win)
-elseif type(enter) == 'string' and enter == 'two' then
+elseif type(enter) == 'string' and enter == 'two' and self.custom_opts.dual then
 vim.api.nvim_set_current_win(self.winnr.two_win)
 end
 
@@ -802,6 +812,26 @@ end
 
 
 
+-- function Window:close(win_self)
+-- --local current_window = state.views[name] 
+-- --lo(win_self)
+-- vim.schedule(function()
+-- -- close both content and border windows
+-- for k, v in pairs(win_self.winnr) do
+-- vim.api.nvim_win_close(v, false)
+-- end
+
+
+-- if state.recent == win_self then state.recent = nil end
+-- state.views[win_self.setup_opts_pointer] = nil
+
+
+-- if vim.tbl_isempty(state.views) then state.timer:stop() return end
+-- end)
+-- end
+
+
+
 
 
 
@@ -819,7 +849,6 @@ end
 function windows.open(opts)
 lo('===== NEW WINDOW RUN =====')
 opts = opts or {}
---lo(opts)
 
 
 local view_in_keys = {}
@@ -836,29 +865,60 @@ if k:find('^view[%d]*$') then
 end
 
 
+-- for _, view in ipairs(view_in_keys) do
+-- -- 3 check if presets were added to opts successfully
+-- --assert(type(opts[view .. '_action']) == 'function', 'opts...view1_action..not a function')
+-- -- 4 add view1_action root level into view = { action = actionpreset } cause cba to change all values in window.lua
+--  end
+
+
+
 for _, view in ipairs(view_in_keys) do
--- 3 check if presets were added to opts successfully
-assert(type(opts[view]) == 'table', 'opts...view1..not a table')
---assert(type(opts[view .. '_action']) == 'function', 'opts...view1_action..not a function')
--- 4 add view1_action root level into view = { action = actionpreset } cause cba to change all values in window.lua
-    opts[view].action = opts[view .. '_action']
+  -- actions
+  assert(type(opts[view]) == 'table', 'opts...view1..not a table')
+
+
+   opts[view].action = opts[view .. '_action']
+    opts[view].two_action = opts[view .. '_two_action']
+
+
+
+local toggle = get_default(opts[view].toggle, config.defaults.toggle)
+--lo(toggle)
+-- toggle
+if toggle then
+for k, v in pairs(state.views) do
+ -- lo(tostring(opts))
+--  lo(opts[view])
+  --lo(tostring(v.setup_opts))
+-- lo(v.setup_opts)
+-- lo('iterated')
+if vim.inspect(opts[view]) == vim.inspect(v.setup_opts) then 
+--lo('MATCHED!!!!')
+windows.close_single_view(state.views[k])
+  --state.views[k]:close(state.views[k]) 
+  return
+
+end
+end
 end
 
+--lo('got past toggle wall')
 
 
---lo(opts)
-for _, view in ipairs(view_in_keys) do
 
 local current_window = Window:new(opts[view] or {})
---lo(current_window)
 current_window:calculate()
 current_window:open()
---lo(current_window)
 
+--local setup_opts_pointer = tostring(current_window.setup_opts)
 
-
-state.views[current_window.name] = current_window
+state.views[current_window.setup_opts_pointer] = current_window
 state.recent = current_window
+
+
+end
+
 
 
 
@@ -883,31 +943,20 @@ local old_max_row = vim.deepcopy(v.custom_opts.max_row)
 
 state.views[k]:refresh_win_dimensions(state.views[k])
 
--- v.custom_opts.max_col = vim.api.nvim_call_function('winwidth', {v.total_opts.win})
---v.custom_opts.max_row = vim.api.nvim_call_function('winheight', {v.total_opts.win})
 
 
 
 if old_max_col ~= v.custom_opts.max_col or old_max_row ~= v.custom_opts.max_row then
---lo('before resize')
---lo(state.views[k])
-
- --   lo('VALUES ARE DIFFERENT - WINDOW RESIZED')
---local log = require'log1'
-  ---  log.info(state.views[k])
     state.views[k]:resize_all(state.views[k])
       end
---  table.insert(windows_to_monitor, v.total_opts.win)
 
 end
 end
---lo(windows_to_monitor)
 
 
      end))
 
 
-end
 
 end
 
@@ -915,30 +964,43 @@ end
 
 
 
-function windows.on_win_closed(name)
-if vim.tbl_isempty(state.views) then timer:stop() return end
+function windows.close_all_views()
+for _, v in pairs(state.views) do
+      
 
-lo('buf closed trig')
---lo(name)
-local current_window = state.views[name] 
+    if vim.api.nvim_win_is_valid(v.winnr.one_content) then
+vim.api.nvim_win_close(v.winnr.one_content, false)
+  end
 
---lo(current_window)
--- close both content and border windows
-for k, v in pairs(current_window.winnr) do
+end
+
+--state.recent = {}
+--state[views] = {}
+end
+
+
+
+
+function windows.close_single_view(win_self)
+for k, v in pairs(win_self.winnr) do
+if vim.api.nvim_win_is_valid(v) then
 vim.api.nvim_win_close(v, false)
 end
+end
 
--- delete border buffer
--- vim.api.nvim_buf_delete(current_window.bufnr.obj_border, { force = true })
--- if current_window.bufnr.log_border then 
---   vim.api.nvim_buf_delete(current_window.bufnr.log_border, { force = true })
--- end
+if state.recent == win_self then state.recent = {} end
+state.views[win_self.setup_opts_pointer] = nil
 
 
-current_window = nil
-if state.recent == state.views[name] then state.recent = nil end
-state.views[name] = nil
+if vim.tbl_isempty(state.views) then state.timer:stop() return end
 
+end
+
+
+
+function windows.on_win_closed(setup_opts_pointer)
+  windows.close_single_view(state.views[setup_opts_pointer])
+ -- state.views[setup_opts_pointer]:close(state.views[setup_opts_pointer])
 end
 
 
@@ -957,256 +1019,3 @@ return windows
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
--- old auto grow stuff
-
-
-
-
-
--- if win_self.custom_opts.dual == false then
-
--- else
-
-
--- end
-
-
-
-
--- add one off contents height adjust when opening window, after buffer and custom function is loaded
--- if single_dual == false and one_two == 'one' then
-
--- elseif single_dual == false and one_two == 'two' then
-
--- elseif single_dual == true then 
--- apply_content_height(self.total_opts)
--- end
-
-
--- what if its a negative number?
--- local line_count = 7
--- self.total_opts.row = 14
--- -- or positive
--- local line_count = 14
--- self.total_opts.row = 7
-
-
--- local function other_win(w)
--- if w == 'one' then return 'two' else return 'one' end
--- end
-
--- other_win = other_win(one_two)
-
--- lo(self.total_opts.height)
--- lo(self.total_opts.row)
--- lo(line_count)
--- -- tested: pin bottom, 
-
-
---decide direction based on pin
--- local direction, op
--- if win_self.custom_opts.pin == 'top' then
--- direction = 'down'
--- op = 'add'
--- elseif win_self.custom_opts.pin == 'bottom' then
--- direction = 'up'
--- op = 'min'
--- end
-
--- local function add_min(op, a, b)
--- if op == 'add' then
--- return a + b
--- elseif op == 'min' then
--- return a - b
--- end
--- end
-
-
-
-
-
-
---- old resize function
-
-
-
--- function Window:resize(win_self, one_two)
-
--- if win_self then win_self = self end
--- lo('resize trig')
-
--- --lo(self.custom_opts)
--- --lo(one_two)
-
--- if one_two == 'one' and self.custom_opts.dual == false then
---   lo('resize trig 1')
-
--- --vim.api.nvim_win_set_config(self.winnr.one_border, self.one_border_opts)
--- lo('self total opts width at time of nvim win set config')
-
--- lo(self.total_opts.width)
--- vim.api.nvim_win_set_config(self.winnr.one_content, self.total_opts)
--- local border_win_opts = self.border:calculate()
-
-
--- elseif one_two == 'one' and self.custom_opts.dual == true then
---  lo('resize trig 2')
-
--- --vim.api.nvim_win_set_config(self.winnr.one_border, self.one_border_opts)
--- vim.api.nvim_win_set_config(self.winnr.one_content, self.one_opts)
-
--- elseif one_two == 'two' and self.custom_opts.dual == true then
---  lo('resize trig 3')
-
--- --vim.api.nvim_win_set_config(self.winnr.one_border, self.two_border_opts)
--- vim.api.nvim_win_set_config(self.winnr.two_content, self.two_opts)
--- --lo('after resize')
--- --lo(win_self)
--- end
-
--- end
-
-
-
-
-
--- old
- -- there is no winresized autocmd, but soon
- --   lo('autocmd winresized setup trig')
- -- local on_win_resized = [[autocmd VimResized :silent lua require('floating/window').on_win_resized()]]
-
-
- --  vim.cmd([[augroup FloatingWinResized]])
- --  vim.cmd([[  au!]])
- --  vim.cmd(    on_win_resized)
- --  vim.cmd([[augroup END]])
-
-
-
-
--- not the same as values returned
--- renderer = renderer:new({ 
---   target = opts.target,
---   log = opts.log,
---   obj_border_opts = obj_border_opts,
---   log_border_opts = log_border_opts,
---   obj_opts = obj_opts,
---   log_opts = log_opts
---   })
---  }
-
-
--- 2 replace view1_action == 'presetname' with its function from config - action presets
--- elseif k:find('^view[%d]*_action') then
---   local view = k:gsub('_action', '')
-
--- -- 2 if function call name is 
--- -- for _, v in ipairs(config.action_presets) do
-
--- --  if type(v) == 'string' then
--- --    assert(config.action_presets[v], 'action preset not found in config')
--- --       opts[k] = config.action_presets[v] 
--- --     end
-
-
--- function windows.open(opts)
--- lo('===== NEW WINDOW RUN =====')
--- opts = opts or {}
--- --lo(opts)
-
-
--- local view_in_keys = {}
--- -- 1 replace view1 = 'string' with its table from config - ui/view presets
--- for k,v in pairs(opts or {}) do
--- if k:find('^view[%d]*$') then 
---   table.insert(view_in_keys, k)
---   if type(v) == 'string' then
---     assert(config.view_presets[v], 'view preset not found in config')
---     opts[k] = config.view_presets[v]
---    end
-
- 
--- -- 2 replace view1_action == 'presetname' with its function from config - action presets
--- elseif k:find('^view[%d]*_action') then
---   local view = k:gsub('_action', '')
---  if type(v) == 'string' then
---    assert(config.action_presets[v], 'action preset not found in config')
---       opts[k] = config.action_presets[v] 
---     end
--- end
--- end
-
-
--- for _, view in ipairs(view_in_keys) do
--- -- 3 check if presets were added to opts successfully
--- assert(type(opts[view]) == 'table', 'opts...view1..not a table')
--- assert(type(opts[view .. '_action']) == 'function', 'opts...view1_action..not a function')
--- -- 4 add view1_action root level into view = { action = actionpreset } cause cba to change all values in window.lua
---     opts[view].action = opts[view .. '_action']
--- end
-
-
-
--- lo(opts)
--- for _, view in ipairs(view_in_keys) do
---  fstate.floating[view] = Window:new(opts[view] or {})
---  fstate.floating[view]:open()
---  -- also add to _most recent window array
-
--- end
-
--- end
-
-
-
-
-
-
-
-
-
-
-
---local function parse_view_opts(opts)
--- views = {}
--- for k,v in pairs(opts or {}) do
--- if k:find('^view[%d]*') then table.insert(views, k) end
--- end
--- if vim.tbl_isempty(views) then return false else return views end
--- end
-
-
-
-
--- view_in_keys = parse_view_opts(opts) or { 'view1' }
-
-
-
--- -- 1st iterate and check if view1 or view2 etc is string, then its a preset
--- for _, view in ipairs(view_in_keys) do
---   if type(view) == 'string' then
-    
---   end
--- end
-
-
-
-
-
--- for _, view in ipairs(view_in_keys) do
-
--- fstate.floating[view] = Window:new(opts[view] or {})
--- fst

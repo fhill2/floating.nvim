@@ -21,14 +21,6 @@ function utils:strsplit(sSeparator, nMax, bRegexp)
    return aRecord
 end
 
--- function utils.start_timer()
--- local timer = vim.loop.new_timer()
--- math.random   
-
--- timer:start(1000, 0, vim.schedule_wrap(function()
---     --  vim.api.nvim_command('echomsg "test"')
---     end))
---   end
 
 utils.if_nil = function(x, was_nil, was_not_nil)
   if x == nil then
@@ -48,7 +40,7 @@ utils.ternary = function(condition, if_true, if_false)
   if condition then return if_true else return if_false end
 end
 
---below here for popup.lua
+-- FROM popup.lua
 utils.bounded = function(value, min, max)
   min = min or 0
   max = max or math.huge
@@ -63,18 +55,40 @@ utils.apply_defaults = function(original, defaults)
   if original == nil then
     original = {}
   end
-
-  original = vim.deepcopy(original)
-
-  for k, v in pairs(defaults) do
-    if original[k] == nil then
-      original[k] = v
-    end
-  end
-
-  return original
 end
 
+
+-- FROM telescope/path.lua
+utils.read_file = function(filepath)
+  local fd = vim.loop.fs_open(filepath, "r", 438)
+  if fd == nil then return '' end
+  local stat = assert(vim.loop.fs_fstat(fd))
+  if stat.type ~= 'file' then return '' end
+  local data = assert(vim.loop.fs_read(fd, stat.size, 0))
+  assert(vim.loop.fs_close(fd))
+  return data
+end
+
+utils.read_file_async = function(filepath, callback)
+  vim.loop.fs_open(filepath, "r", 438, function(err_open, fd)
+    if err_open then
+      print("We tried to open this file but couldn't. We failed with following error message: " .. err_open)
+      return
+    end
+    vim.loop.fs_fstat(fd, function(err_fstat, stat)
+      assert(not err_fstat, err_fstat)
+   --   lo(vim.in_fast_event())
+      if stat.type ~= 'file' then return callback('') end
+      vim.loop.fs_read(fd, stat.size, 0, function(err_read, data)
+        assert(not err_read, err_read)
+        vim.loop.fs_close(fd, function(err_close)
+          assert(not err_close, err_close)
+          return callback(data)
+        end)
+      end)
+    end)
+  end)
+end
 
 
 return utils

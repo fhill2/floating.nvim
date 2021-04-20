@@ -5,16 +5,15 @@ local get_default = utils.get_default
 
 Config = {
 defaults = {
-show_border = true,
+border = true,
 border_thickness = { 1,1,1,1},
 borderchars = { '─', '│', '─', '│', '╭', '╮', '╯', '╰'},
-one_border_title = 'win1',
-two_border_title = 'win2',
+title = 'win1',
+two_title = 'win2',
 x = 0,
 y = 0,
 layout = 'vertical',
-pin = 'bot',
-center = true,
+pin = false,
 dual = false,
 grow = false,
 two_grow = false, 
@@ -32,44 +31,70 @@ two_margin = {1,1,1,1},
 width = 0.9,
 height = 0.3,
 relative = 'win',
-style = 'minimal',
-enter = false
+style = false,
+enter = false,
+toggle = true
 },
-view_presets = {},
-action_presets = {},
+user_view_presets = {},
+user_action_presets = {},
+default_view_presets = {},
+default_action_presets = {
+  open_file = function(bufnr, winnr, filepath) 
+local filetype = filepath:match('.*%/.*%.(.*)$')
+   --  local file_contents = vim.fn.readfile(filepath)
+local fd = vim.loop.fs_open(filepath, "r", 438, function(err_open, fd)
+if err_open then
+ vim.schedule(function()vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {'Error: cant find file', err_open}) end)
+  return
+else
+ local stat = vim.loop.fs_fstat(fd)
+  
+ if stat.type ~= 'file' then 
+   vim.schedule(function()vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {'Error: filepath is not a file'}) end)
+   return
+  end
+
+  local data = vim.loop.fs_read(fd, stat.size, 0)
+  vim.loop.fs_close(fd)
+
+  vim.schedule(function()
+ vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(data, '[\r]?\n'))
+vim.api.nvim_buf_set_option(bufnr, 'filetype', filetype)  
+end)
+
+
+end
+
+
+end)
+
+ --  if fd == nil then
+ -- vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {'Error: cant find file'})
+ --  else
+ --    file_contents = utils.read_file(filepath)
+ --  end
+
+
+
+   
+ end,
+
+
+  },
 }
 
 function Config.setup(opts)
 opts = opts or {}
---lo(opts)
---lo('setup trig')
-
 
 
 for k, v in pairs(opts.defaults) do
 Config.defaults[k] = v
 end
 
-Config.view_presets = opts.view_presets
-Config.action_presets = opts.action_presets
---vim.tbl_deep_extend('keep', opts.defaults, Config.defaults)
---lo(Config)
+Config.user_view_presets = opts.view_presets
+Config.user_action_presets = opts.action_presets
 end
 
 
 
--- mt = {
--- __index = function(self,k,v)
--- --  lo(self)
---   lo(k)
---   lo(v)
---   lo('floating config index trig')
--- end,
--- __newindex = function() 
---   lo('floating config new index trig') 
--- end
--- }
-
-
--- setmetatable(Config, mt)
 return Config

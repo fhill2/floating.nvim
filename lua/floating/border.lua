@@ -1,8 +1,9 @@
---local tbl = require('plenary.tbl')
-
 local log = require'log1'
 
 
+-- MODIFIED VERSION of plenary/window/border
+-- https://github.com/nvim-lua/plenary.nvim
+-- modified to implement border resizing without having to open/close window
 
 local Border = {}
 
@@ -118,9 +119,6 @@ end
 function Border:redraw_all(win_self)
 vim.schedule_wrap(function()
  if win_self then self = win_self.border end
---lo('self at border redraw all is: ')
---log.info(win_self)
-
 -- for main window resizing autocmd like
 
 if win_self.bufnr.one_border ~= nil and win_self.custom_opts.dual == false then
@@ -137,41 +135,17 @@ self:redraw_single(win_self, 'two', true, win_self.two_opts)
 end
 
 
--- for k,v in pairs({ one_border = win_self.bufnr.one_border, two_border = win_self.bufnr.two_border }) do
--- if k == 'one_border' and win_self.custom_opts.dual == false then
--- self:redraw_single(win_self, 'one', false)
--- elseif k == 'one_border' and win_self.custom_opts.dual == true then
--- self:redraw_single(win_self, 'one', true)
--- elseif k == 'two_border' and win_self.custom_opts.dual == true then
--- self:redraw_single(win_self, 'two', true)
---end
---end
 end)
 end
 
 function Border:redraw_single(win_self, one_two, single_dual, content_win_opts)
---lo('REDRAW redraw_single')
 -- redraw - for first window opening, and auto grow
 -- if win_self then self = win_self end
 
 
 local border_opts = win_self[one_two .. '_border_opts']
 local border_bufnr = win_self.bufnr[one_two .. '_border']
---lo('self at border redraw single is: ')
---lo(win_self)
 
-
--- local content_win_opts
--- if single_dual == false then
--- lo('picked total_opts')
--- content_win_opts = win_self.total_opts
--- elseif one_two == 'one' and single_dual == true then
--- content_win_opts = win_self.one_opts
--- lo('picked one opts')
--- elseif one_two == 'two' and single_dual == true then
--- content_win_opts = win_self.two_opts
--- lo('picked two opts')
--- end
 
 
 
@@ -181,11 +155,6 @@ local border_win_opts = win_self.border:calculate(content_win_opts, border_opts)
 
 
 local border_winnr = win_self.winnr[one_two .. '_border']
---if vim.api.nvim_win_is_valid(border_winnr) == true then
- -- lo('chose nvim win set config. border winnr exists')
---lo('GOT HERE')
--- lo(border_winnr)
--- lo(win_self)
 
 
 
@@ -234,9 +203,6 @@ local border_win_opts = win_self.border:calculate(content_win_opts, border_opts)
 
 
 
---local border_win_opts = Border:redraw_single(win_self, one_two, single_dual)
--- duplicate in redraw_all
---lo(border_win_opts)
 win_self.winnr[one_two .. '_border'] = vim.api.nvim_open_win(border_bufnr, false, border_win_opts)
 
 
