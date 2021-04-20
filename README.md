@@ -1,3 +1,8 @@
+
+![welcome-screen](https://user-images.githubusercontent.com/16906982/115450101-5c600c00-a1d0-11eb-8d2e-9afc893b6e23.gif)
+
+
+```lua
 require'floating'.config {
 defaults = {
 -- nvim_open_win() standard params
@@ -52,6 +57,8 @@ action_presets = {
 -- add your own custom actions here
 }
 }
+```
+
 
 
 
