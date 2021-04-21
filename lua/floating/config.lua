@@ -64,6 +64,9 @@ Config = {
 
             end)
 
+        end,
+        buf_write = function(bufnr, winnr, msg) 
+           vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { msg})
         end
 
     }

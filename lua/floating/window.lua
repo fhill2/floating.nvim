@@ -433,12 +433,18 @@ function Window:open()
         -- 1 create contents buf
         local contents_bufnr = vim.api.nvim_create_buf(false, true)
         self.bufnr[one_two .. "_content"] = contents_bufnr
+    
+
+      
 
         -- 2 create contents winnr
         local contents_winnr
         if single_dual == false then
-            contents_winnr = vim.api.nvim_open_win(contents_bufnr, false, self[one_two .. "_opts"])
+ self[one_two .. '_opts'].height = math.ceil(self[one_two .. '_opts'].height)
+
+                      contents_winnr = vim.api.nvim_open_win(contents_bufnr, false, self[one_two .. "_opts"])
         elseif single_dual == true then
+          self.total_opts.height = math.ceil(self.total_opts.height)
             contents_winnr = vim.api.nvim_open_win(contents_bufnr, false, self.total_opts)
         end
 
