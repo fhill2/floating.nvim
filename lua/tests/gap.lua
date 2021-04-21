@@ -7,12 +7,12 @@ require'floating'.open({
   width = 0.4,
   pin = 'bot',
   height = 0.3,
-  gap = 0,
+  gap = 3,
   border = true,
   relative = 'editor',
   style = 'minimal',
-  title = 'gap = 0',
-  two_title = 'gap = 0'
+  title = 'gap = 3',
+  two_title = 'gap = 3'
    },
  })
 

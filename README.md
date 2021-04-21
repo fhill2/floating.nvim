@@ -2,6 +2,14 @@
 
 ![grow-false](https://user-images.githubusercontent.com/16906982/115581381-d057ee00-a27c-11eb-8fd5-3e91a5668ccb.gif)
 ![grow-true](https://user-images.githubusercontent.com/16906982/115581396-d2ba4800-a27c-11eb-8d2a-06a846d18fe5.gif)
+
+![gap-0](https://user-images.githubusercontent.com/16906982/115616286-e37eb400-a2a4-11eb-842e-9f71b7698a8e.png)
+![gap-1](https://user-images.githubusercontent.com/16906982/115616294-e4afe100-a2a4-11eb-8b43-1df6abd164f6.png)
+![content_height](https://user-images.githubusercontent.com/16906982/115616308-eb3e5880-a2a4-11eb-9b1e-53c98ba073ba.gif)
+![split-vert-0 3](https://user-images.githubusercontent.com/16906982/115616316-ee394900-a2a4-11eb-874a-1a3338a785b4.png)
+![split-vert-0 7](https://user-images.githubusercontent.com/16906982/115616326-f0030c80-a2a4-11eb-8d68-741581175139.png)
+![split-horizontal-0 3](https://user-images.githubusercontent.com/16906982/115616340-f2656680-a2a4-11eb-95fe-9650b958bae6.png)
+![split-horizontal-0 7](https://user-images.githubusercontent.com/16906982/115616345-f3969380-a2a4-11eb-8fbe-522c74a56591.png)
 ```lua
 require'floating'.config {
 defaults = {

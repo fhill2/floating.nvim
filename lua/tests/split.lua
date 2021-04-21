@@ -3,7 +3,7 @@ local root = string.format('%s/%s/%s/%s/%s', vim.fn.stdpath('config'), 'plugins-
 require'floating'.open({
   view1 = {
   dual = true,
-  layout = 'vertical',
+  layout = 'horizontal',
   width = 0.9,
   pin = 'bot',
   height = 0.5,
@@ -12,8 +12,8 @@ require'floating'.open({
   split = 0.7,
   relative = 'editor',
   style = 'minimal',
-  title = [[split=0.7,layout='vertical' ]],
-  two_title = [[split=0.7,layout='vertical']]
+  title = [[split=0.7,layout='horizontal' ]],
+  two_title = [[split=0.7,layout='horizontal']]
    },
  })
 
