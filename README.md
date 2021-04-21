@@ -1,5 +1,4 @@
-
-![welcome-screen](https://user-images.githubusercontent.com/16906982/115462273-4f96e480-a1df-11eb-8c17-5503991ec5cf.gif)
+![asd](https://user-images.githubusercontent.com/16906982/115479503-5e8c8f80-a1fd-11eb-969e-66428b3378fe.gif)
 
 ```lua
 require'floating'.config {
