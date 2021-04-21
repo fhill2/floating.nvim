@@ -37,18 +37,18 @@ Config = {
     user_action_presets = {},
     default_view_presets = {},
     default_action_presets = {
-        open_file = function(bufnr, winnr, filepath)
+        open_file = function(opts, filepath)
+
             local filetype = filepath:match('.*%/.*%.(.*)$')
-            --  local file_contents = vim.fn.readfile(filepath)
-            local fd = vim.loop.fs_open(filepath, "r", 438, function(err_open, fd)
+                     local fd = vim.loop.fs_open(filepath, "r", 438, function(err_open, fd)
                 if err_open then
-                    vim.schedule(function() vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {'Error: cant find file', err_open}) end)
+                    vim.schedule(function() vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: cant find file', err_open}) end)
                     return
                 else
                     local stat = vim.loop.fs_fstat(fd)
 
                     if stat.type ~= 'file' then
-                        vim.schedule(function() vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {'Error: filepath is not a file'}) end)
+                        vim.schedule(function() vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: filepath is not a file'}) end)
                         return
                     end
 
@@ -56,8 +56,15 @@ Config = {
                     vim.loop.fs_close(fd)
 
                     vim.schedule(function()
-                        vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, vim.split(data, '[\r]?\n'))
-                        vim.api.nvim_buf_set_option(bufnr, 'filetype', filetype)
+                        vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, vim.split(data, '[\r]?\n'))
+                        vim.api.nvim_buf_set_option(opts.bufnr, 'filetype', filetype)
+
+                        if opts.one_two == 'one' and opts.win_self.custom_opts.content_height == true then
+                            opts.win_self:resize_to_height(opts.win_self, opts.one_two, opts.single_dual)
+                        elseif opts.one_two == 'two' and opts.win_self.custom_opts.two_content_height == true then
+                            opts.win_self:resize_to_height(opts.win_self, opts.one_two, opts.single_dual)
+                        end
+
                     end)
 
                 end
@@ -65,9 +72,7 @@ Config = {
             end)
 
         end,
-        buf_write = function(bufnr, winnr, msg) 
-           vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { msg})
-        end
+        buf_write = function(bufnr, winnr, msg) vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {msg}) end
 
     }
 }

@@ -2,49 +2,20 @@ local root = string.format('%s/%s/%s/%s/%s', vim.fn.stdpath('config'), 'plugins-
 
 require'floating'.open({
   view1 = {
- --  x = 30,
-  dual = false,
-  width = 0.4,
+  dual = true,
+  layout = 'vertical',
+  width = 0.9,
   pin = 'bot',
-  height = 0.7,
+  height = 0.5,
+  gap = 1,
   border = true,
+  split = 0.7,
   relative = 'editor',
-  grow = true,
-  title = 'grow = true',
+  style = 'minimal',
+  title = [[split=0.7,layout='vertical' ]],
+  two_title = [[split=0.7,layout='vertical']]
    },
-view1_action = {'open_file', string.format('%s/%s', root, '6lines.lua')},
-
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ })
 
 
 

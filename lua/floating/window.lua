@@ -13,6 +13,7 @@ local state = require "floating/state"
 local Window = {}
 Window.__index = Window
 
+
 function Window:new(opts)
     opts = opts or {}
 
@@ -340,9 +341,9 @@ function Window:resize_all(win_self)
 end
 
 function Window:resize_to_height(win_self, one_two, single_dual)
-    local buf_contents = vim.api.nvim_buf_get_lines(win_self.bufnr[one_two .. "_content"], 0, -1, false)
-    line_count = #buf_contents + 2
-
+   contents_bufnr = win_self.bufnr[one_two .. "_content"]
+  buf_contents = vim.api.nvim_buf_get_lines(contents_bufnr, 0, -1, false)
+     line_count = #buf_contents
     local max_height
     if one_two == "one" then
         max_height = win_self.custom_opts.max_height
@@ -428,12 +429,12 @@ end
 
 function Window:open()
     local function open_window(one_two, single_dual)
-        local border_opts = self[one_two .. "_border_opts"]
+
+          local border_opts = self[one_two .. "_border_opts"]
 
         -- 1 create contents buf
-        local contents_bufnr = vim.api.nvim_create_buf(false, true)
+        contents_bufnr = vim.api.nvim_create_buf(false, true)
         self.bufnr[one_two .. "_content"] = contents_bufnr
-    
 
       
 
@@ -465,6 +466,19 @@ function Window:open()
 
         local on_win_closed = string.format([[  autocmd WinClosed <buffer> ++nested ++once :silent lua require('floating/window').on_win_closed('%s')]], self.setup_opts_pointer)
 
+
+        -- opts for 
+      opts = {
+        win_self = self,
+        bufnr = contents_bufnr,
+        winnr = contents_winnr,
+        one_two = one_two,
+        single_dual = single_dual,
+      }
+
+
+
+      
         vim.api.nvim_buf_call(contents_bufnr, function()
             vim.cmd(on_win_closed)
 
@@ -477,16 +491,16 @@ function Window:open()
 
             if type(action) == "table" then
                 if config.user_action_presets[action[1]] then
-                    config.user_action_presets[action[1]](contents_bufnr, contents_winnr, action[2], action[3])
+                    config.user_action_presets[action[1]](opts, action[2], action[3])
                 elseif config.default_action_presets[action[1]] then
-                    config.default_action_presets[action[1]](contents_bufnr, contents_winnr, action[2], action[3])
+                    config.default_action_presets[action[1]](opts, action[2], action[3])
                 else
                     assert(false, "action not found in action preset table. Add action inside config action_presets table underneath defaults.")
                 end
             elseif type(action) == "function" then
-                action(contents_bufnr, contents_winnr)
+                action(opts, contents_bufnr, contents_winnr)
             end
-        end)
+                  end)
 
         local function buf_attach(self, one_two, single_dual)
             local contents_bufnr = self.bufnr[one_two .. "_content"]
@@ -496,7 +510,8 @@ function Window:open()
 
         if one_two == "one" and self.custom_opts.grow == true then buf_attach(self, "one", single_dual) end
         if one_two == "two" and self.custom_opts.two_grow == true then buf_attach(self, "two", single_dual) end
-    end
+
+      end -- end open window function
 
     self.bufnr = {}
     self.winnr = {}
@@ -516,12 +531,7 @@ function Window:open()
     elseif type(enter) == "string" and enter == "two" and self.custom_opts.dual then
         vim.api.nvim_set_current_win(self.winnr.two_win)
     end
-
-    -- on window open resize height to content height
-    if custom_opts.content_height == true and custom_opts.dual == false then self:resize_to_height(self, "one", true) end
-    if custom_opts.content_height == true and custom_opts.dual == true then self:resize_to_height(self, "one", false) end
-    if custom_opts.two_content_height == true and custom_opts.dual == true then self:resize_to_height(self, "two", false) end
-end
+ end
 
 function windows.open(opts)
     opts = opts or {}
