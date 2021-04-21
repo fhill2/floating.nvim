@@ -1,5 +1,7 @@
 
 ![asd](https://user-images.githubusercontent.com/16906982/115493296-5726af80-a218-11eb-8690-ca6859ce697c.gif)
+![grow-false](https://user-images.githubusercontent.com/16906982/115581381-d057ee00-a27c-11eb-8fd5-3e91a5668ccb.gif)
+![grow-true](https://user-images.githubusercontent.com/16906982/115581396-d2ba4800-a27c-11eb-8d2a-06a846d18fe5.gif)
 ```lua
 require'floating'.config {
 defaults = {
