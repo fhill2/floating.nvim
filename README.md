@@ -1,5 +1,4 @@
-![asd](https://user-images.githubusercontent.com/16906982/115479503-5e8c8f80-a1fd-11eb-969e-66428b3378fe.gif)
-
+![asd](https://user-images.githubusercontent.com/16906982/115480852-394d5080-a200-11eb-989b-a273b6211456.gif)
 ```lua
 require'floating'.config {
 defaults = {
