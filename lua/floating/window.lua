@@ -541,16 +541,24 @@ function windows.open(opts)
     for k, v in pairs(opts or {}) do
         if k:find("^view[%d]*$") then
             table.insert(view_in_keys, k)
-            if type(v) == "string" then
-                assert(config.view_presets[v], "view preset not found in config")
-                opts[k] = config.view_presets[v]
-            end
-        end
+    if v[2] == nil and type(v) == 'string' then 
+  opts[k] = config.get_preset(v, 'view', false)
+  elseif v[2] == nil and type(v) == 'table' then
+     if not vim.tbl_isempty(v) and vim.tbl_islist(v) then assert(false, 'input opts must be kv pairs') end  
+  -- continue 
+  elseif v[2] ~= nil and type(v[1]) == 'string' and type(v[2]) == 'table' then
+     if not vim.tbl_isempty(v[2]) and vim.tbl_islist(v[2]) then assert(false, 'input opts to merge with preset must be kv pairs') end  
+      opts[k] = config.get_preset(v[1], 'view', true, v[2])
+      else 
+       assert(false, [[opts has to be: {opts} or {'view_preset', {}}]])
     end
 
-    for _, view in ipairs(view_in_keys) do
-        assert(type(opts[view]) == "table", "opts...view1..not a table")
+  end
+end
+  
 
+    for _, view in ipairs(view_in_keys) do
+      
         opts[view].action = opts[view .. "_action"]
         opts[view].two_action = opts[view .. "_two_action"]
 
@@ -600,6 +608,7 @@ function windows.open(opts)
         end))
     end
 end
+
 
 function windows.close_all_views() for _, v in pairs(state.views) do if vim.api.nvim_win_is_valid(v.winnr.one_content) then vim.api.nvim_win_close(v.winnr.one_content, false) end end end
 

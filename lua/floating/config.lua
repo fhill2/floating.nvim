@@ -35,7 +35,19 @@ Config = {
     },
     user_view_presets = {},
     user_action_presets = {},
-    default_view_presets = {},
+    default_view_presets = {
+        single_auto_grow = {},
+        single_center = {
+        width = 0.8,
+        height = 0.8,
+        },
+        dual_bot = {},
+
+
+
+
+
+    },
     default_action_presets = {
         open_file = function(opts, filepath)
 
@@ -85,5 +97,20 @@ function Config.setup(opts)
     Config.user_view_presets = opts.view_presets
     Config.user_action_presets = opts.action_presets
 end
+
+
+function Config.get_preset(preset_name, view_action, merge, merge_opts)
+local user_preset = Config['user_' .. view_action .. '_presets'][preset_name]
+local default_preset = Config['default_' .. view_action .. '_presets'][preset_name]
+local preset = user_preset or default_preset or assert(false, view_action .. ' preset not found in user or default presets') 
+
+if merge and view_action == 'view' then
+return vim.tbl_extend('force', preset, merge_opts) 
+ else
+return preset
+end
+end
+
+
 
 return Config
