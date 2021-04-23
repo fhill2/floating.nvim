@@ -33,14 +33,26 @@ Config = {
         enter = false,
         toggle = true
     },
-    user_view_presets = {},
-    user_action_presets = {},
-    default_view_presets = {
+    user_views = {},
+    user_actions = {},
+    default_views = {
         single_auto_grow = {},
-        single_center = {
+        center = {
         width = 0.8,
         height = 0.8,
         },
+        content_auto = {
+          content_height = true,
+          grow = true,
+        },
+        dual_content_auto = {
+          content_height = true,
+          two_content_height = true,
+          grow = true,
+          two_grow = true,
+        },
+
+
         dual_bot = {},
 
 
@@ -48,7 +60,7 @@ Config = {
 
 
     },
-    default_action_presets = {
+    default_actions = {
         open_file = function(opts, filepath)
           if not filepath then vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: filepath not specified'}) return end
             local filetype = filepath:match('.*%/.*%.(.*)$')
@@ -97,14 +109,14 @@ function Config.setup(opts)
 
     for k, v in pairs(opts.defaults) do Config.defaults[k] = v end
 
-    Config.user_view_presets = opts.view_presets
-    Config.user_action_presets = opts.action_presets
+    Config.user_views = opts.user_views
+    Config.user_actions = opts.user_actions
 end
 
 
 function Config.get_preset(preset_name, view_action, merge, merge_opts)
-local user_preset = Config['user_' .. view_action .. '_presets'][preset_name]
-local default_preset = Config['default_' .. view_action .. '_presets'][preset_name]
+local user_preset = Config['user_' .. view_action][preset_name]
+local default_preset = Config['default_' .. view_action][preset_name]
 local preset = user_preset or default_preset or assert(false, view_action .. ' preset not found in user or default presets') 
 
 if merge and view_action == 'view' then

@@ -490,10 +490,10 @@ function Window:open()
             end
 
             if type(action) == "table" then
-                if config.user_action_presets[action[1]] then
-                    config.user_action_presets[action[1]](opts, action[2], action[3])
-                elseif config.default_action_presets[action[1]] then
-                    config.default_action_presets[action[1]](opts, action[2], action[3])
+                if config.user_actions[action[1]] then
+                    config.user_actions[action[1]](opts, action[2], action[3])
+                elseif config.default_actions[action[1]] then
+                    config.default_actions[action[1]](opts, action[2], action[3])
                 else
                     assert(false, "action not found in action preset table. Add action inside config action_presets table underneath defaults.")
                 end
@@ -542,13 +542,13 @@ function windows.open(opts)
         if k:find("^view[%d]*$") then
             table.insert(view_in_keys, k)
     if v[2] == nil and type(v) == 'string' then 
-  opts[k] = config.get_preset(v, 'view', false)
+  opts[k] = config.get_preset(v, 'views', false)
   elseif v[2] == nil and type(v) == 'table' then
      if not vim.tbl_isempty(v) and vim.tbl_islist(v) then assert(false, 'input opts must be kv pairs') end  
   -- continue 
   elseif v[2] ~= nil and type(v[1]) == 'string' and type(v[2]) == 'table' then
      if not vim.tbl_isempty(v[2]) and vim.tbl_islist(v[2]) then assert(false, 'input opts to merge with preset must be kv pairs') end  
-      opts[k] = config.get_preset(v[1], 'view', true, v[2])
+      opts[k] = config.get_preset(v[1], 'views', true, v[2])
       else 
        assert(false, [[opts has to be: {opts} or {'view_preset', {}}]])
     end
