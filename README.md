@@ -1,5 +1,4 @@
-![floating-nvim](https://user-images.githubusercontent.com/16906982/115815857-9ede4000-a3ac-11eb-80d8-8517f30a7650.png)
-
+![floating-nvim](https://user-images.githubusercontent.com/16906982/115817146-1f05a500-a3af-11eb-8c11-9a72c1832b50.png)
 
 ## What is Floating.nvim?
 
