@@ -1,5 +1,3 @@
-local log = require 'log1'
-
 -- MODIFIED VERSION of plenary/window/border
 -- https://github.com/nvim-lua/plenary.nvim
 -- modified to implement border resizing without having to open/close window
