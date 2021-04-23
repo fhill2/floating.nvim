@@ -50,7 +50,7 @@ Config = {
     },
     default_action_presets = {
         open_file = function(opts, filepath)
-
+          if not filepath then vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: filepath not specified'}) return end
             local filetype = filepath:match('.*%/.*%.(.*)$')
                      local fd = vim.loop.fs_open(filepath, "r", 438, function(err_open, fd)
                 if err_open then
@@ -84,7 +84,10 @@ Config = {
             end)
 
         end,
-        buf_write = function(bufnr, winnr, msg) vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {msg}) end
+        buf_write = function(opts, msg) vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {msg}) end,
+        open_term = function(opts, cmd) 
+                 vim.schedule(function() vim.api.nvim_buf_call(opts.bufnr, function() vim.cmd([[terminal]]) end) end)
+        end
 
     }
 }

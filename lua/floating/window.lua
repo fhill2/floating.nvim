@@ -610,9 +610,15 @@ end
 end
 
 
-function windows.close_all_views() for _, v in pairs(state.views) do if vim.api.nvim_win_is_valid(v.winnr.one_content) then vim.api.nvim_win_close(v.winnr.one_content, false) end end end
+function windows.close_all_views() 
+  for k, v in pairs(state.views) do 
+    windows.close_single_view(state.views[k])
+  end 
+end
 
-function windows.close_single_view(win_self)
+
+
+ function windows.close_single_view(win_self)
     for k, v in pairs(win_self.winnr) do if vim.api.nvim_win_is_valid(v) then vim.api.nvim_win_close(v, false) end end
 
     if state.recent == win_self then state.recent = {} end
