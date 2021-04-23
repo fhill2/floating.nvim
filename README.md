@@ -6,6 +6,8 @@
 It is centered around storing/restoring/managing custom window layouts along with their associated 'actions'
 It aims to be easy to use & easy to customize.
 
+note: background terminal jobs are highest priority TODO, coming soon.
+
 ## Floating.nvim Table of Contents
 
 - [Getting Started](#getting-started)
@@ -390,6 +392,14 @@ Pin > Offset > > Gap > Split > Margin > Open Buffers/Windows/Borders > Content H
 
 Load multiple actions
 better managing - closing, focusing
+telescope integration - view/focus/open/close windows
+replace some parts with vim.lsp.util functions
+focus cycle between opened windows
+uniquely naming windows and focusing by their name
+better integration sending windows to the background and reopening them (npm watch)
+
+
+
 
 ## Contributing
 
