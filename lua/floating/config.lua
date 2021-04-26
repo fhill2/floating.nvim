@@ -31,40 +31,28 @@ Config = {
         relative = 'win',
         style = false,
         enter = false,
-        toggle = true
+        toggle = true,
+        on_close = 'windows'
     },
     user_views = {},
     user_actions = {},
     default_views = {
         single_auto_grow = {},
-        center = {
-        width = 0.8,
-        height = 0.8,
-        },
-        content_auto = {
-          content_height = true,
-          grow = true,
-        },
-        dual_content_auto = {
-          content_height = true,
-          two_content_height = true,
-          grow = true,
-          two_grow = true,
-        },
+        center = {width = 0.8, height = 0.8},
+        content_auto = {content_height = true, grow = true},
+        dual_content_auto = {content_height = true, two_content_height = true, grow = true, two_grow = true},
 
-
-        dual_bot = {},
-
-
-
-
+        dual_bot = {}
 
     },
     default_actions = {
         open_file = function(opts, filepath)
-          if not filepath then vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: filepath not specified'}) return end
+            if not filepath then
+                vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: filepath not specified'})
+                return
+            end
             local filetype = filepath:match('.*%/.*%.(.*)$')
-                     local fd = vim.loop.fs_open(filepath, "r", 438, function(err_open, fd)
+            local fd = vim.loop.fs_open(filepath, "r", 438, function(err_open, fd)
                 if err_open then
                     vim.schedule(function() vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: cant find file', err_open}) end)
                     return
@@ -97,35 +85,29 @@ Config = {
 
         end,
         buf_write = function(opts, msg) vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {msg}) end,
-        open_term = function(opts, cmd) 
-                 vim.schedule(function() vim.api.nvim_buf_call(opts.bufnr, function() vim.cmd([[terminal]]) end) end)
-        end
+        open_term = function(opts, cmd) vim.schedule(function() vim.api.nvim_buf_call(opts.bufnr, function() vim.cmd([[terminal]]) end) end) end
 
     }
 }
 
 function Config.setup(opts)
     opts = opts or {}
-
     for k, v in pairs(opts.defaults) do Config.defaults[k] = v end
 
     Config.user_views = opts.user_views
     Config.user_actions = opts.user_actions
 end
 
-
 function Config.get_preset(preset_name, view_action, merge, merge_opts)
-local user_preset = Config['user_' .. view_action][preset_name]
-local default_preset = Config['default_' .. view_action][preset_name]
-local preset = user_preset or default_preset or assert(false, view_action .. ' preset not found in user or default presets') 
+    local user_preset = Config['user_' .. view_action][preset_name]
+    local default_preset = Config['default_' .. view_action][preset_name]
+    local preset = user_preset or default_preset or assert(false, view_action .. ' preset not found in user or default presets')
 
-if merge and view_action == 'view' then
-return vim.tbl_extend('force', preset, merge_opts) 
- else
-return preset
+    if merge and view_action == 'view' then
+        return vim.tbl_extend('force', preset, merge_opts)
+    else
+        return preset
+    end
 end
-end
-
-
 
 return Config

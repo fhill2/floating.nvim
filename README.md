@@ -85,6 +85,7 @@ require "floating".setup {
         margin = {1, 1, 1, 1},
         enter = false, -- true/false or 'one'/'two'
         toggle = true,
+        on_close = 'buffers',
         -- single & dual - height adjustment
         grow = true, -- true/false
         grow_direction = "down", -- 'up'/'down'
@@ -265,6 +266,7 @@ view1_two_action = {"open_term"}
 | &#x1F537; | `margin`           | like CSS - reduces window edges from outside border                                  | {1,1,1,1}                               |
 |           | `enter`            | if/what window should be focused after window open                                   | boolean                                 |
 |           | `toggle`           | calling open() on the same view config will close the opened window                  | boolean                                 |
+|           | `on_close`         | when closing view, close 'buffers'(and windows) or 'windows' only (use to persist terminal etc) | 'buffers'/'windows'                |
 |           |                    | `Height Adjustment Options`                                                          |
 | &#x1F537; | `grow`             | after win open, adjusts window height to buffer contents on buffer keystroke input   | boolean                                 |
 | &#x1F537; | `grow_direction`   | see [grow](#Grow). if pin is disabled, manually specify grow direction.              | 'up' or 'down'                          |
@@ -370,6 +372,7 @@ require "floating".open(
 
 -- open a terminal window
 -- coming soon: open and run a command, output of terminal to buffer etc...
+-- to persist terminal after closing window: view = { on_close = 'windows'}
 require "floating".open(
     {
         view1 = {},

@@ -13,7 +13,6 @@ local state = require "floating/state"
 local Window = {}
 Window.__index = Window
 
-
 function Window:new(opts)
     opts = opts or {}
 
@@ -49,7 +48,8 @@ function Window:new(opts)
         gap = get_default(opts.gap, config.defaults.gap),
         content_height = get_default(opts.content_height, config.defaults.content_height),
         two_content_height = get_default(opts.two_content_height, config.defaults.two_content_height),
-        enter = get_default(opts.enter, config.defaults.enter)
+        enter = get_default(opts.enter, config.defaults.enter),
+        on_close = get_default(opts.on_close, config.defaults.on_close)
     }
 
     if vim.tbl_islist(opts.margin) then custom_opts.margin = {get_default(opts.margin.top, 1), get_default(opts.margin.right, 1), get_default(opts.margin.bottom, 1), get_default(opts.margin.left, 1)} end
@@ -133,6 +133,7 @@ function Window:new(opts)
         two_border_opts = two_border_opts,
         custom_opts = custom_opts,
         border = border,
+        state = {is_open = true},
         total_opts_init = total_opts_init,
         actions = actions
     }, self)
@@ -341,9 +342,9 @@ function Window:resize_all(win_self)
 end
 
 function Window:resize_to_height(win_self, one_two, single_dual)
-   contents_bufnr = win_self.bufnr[one_two .. "_content"]
-  buf_contents = vim.api.nvim_buf_get_lines(contents_bufnr, 0, -1, false)
-     line_count = #buf_contents
+    contents_bufnr = win_self.bufnr[one_two .. "_content"]
+    buf_contents = vim.api.nvim_buf_get_lines(contents_bufnr, 0, -1, false)
+    line_count = #buf_contents
     local max_height
     if one_two == "one" then
         max_height = win_self.custom_opts.max_height
@@ -430,22 +431,26 @@ end
 function Window:open()
     local function open_window(one_two, single_dual)
 
-          local border_opts = self[one_two .. "_border_opts"]
+        local border_opts = self[one_two .. "_border_opts"]
 
         -- 1 create contents buf
-        contents_bufnr = vim.api.nvim_create_buf(false, true)
-        self.bufnr[one_two .. "_content"] = contents_bufnr
-
-      
+        local contents_bufnr
+        if self.bufnr[one_two .. "_content"] then
+            contents_bufnr = self.bufnr[one_two .. "_content"]
+        else
+            -- if window has been created for the 1st time, and not closed and reopened
+            contents_bufnr = vim.api.nvim_create_buf(false, true)
+            self.bufnr[one_two .. "_content"] = contents_bufnr
+        end
 
         -- 2 create contents winnr
         local contents_winnr
         if single_dual == false then
- self[one_two .. '_opts'].height = math.ceil(self[one_two .. '_opts'].height)
+            self[one_two .. '_opts'].height = math.ceil(self[one_two .. '_opts'].height)
 
-                      contents_winnr = vim.api.nvim_open_win(contents_bufnr, false, self[one_two .. "_opts"])
+            contents_winnr = vim.api.nvim_open_win(contents_bufnr, false, self[one_two .. "_opts"])
         elseif single_dual == true then
-          self.total_opts.height = math.ceil(self.total_opts.height)
+            self.total_opts.height = math.ceil(self.total_opts.height)
             contents_winnr = vim.api.nvim_open_win(contents_bufnr, false, self.total_opts)
         end
 
@@ -466,19 +471,9 @@ function Window:open()
 
         local on_win_closed = string.format([[  autocmd WinClosed <buffer> ++nested ++once :silent lua require('floating/window').on_win_closed('%s')]], self.setup_opts_pointer)
 
-
         -- opts for 
-      opts = {
-        win_self = self,
-        bufnr = contents_bufnr,
-        winnr = contents_winnr,
-        one_two = one_two,
-        single_dual = single_dual,
-      }
+        opts = {win_self = self, bufnr = contents_bufnr, winnr = contents_winnr, one_two = one_two, single_dual = single_dual}
 
-
-
-      
         vim.api.nvim_buf_call(contents_bufnr, function()
             vim.cmd(on_win_closed)
 
@@ -500,7 +495,7 @@ function Window:open()
             elseif type(action) == "function" then
                 action(opts, contents_bufnr, contents_winnr)
             end
-                  end)
+        end)
 
         local function buf_attach(self, one_two, single_dual)
             local contents_bufnr = self.bufnr[one_two .. "_content"]
@@ -511,10 +506,10 @@ function Window:open()
         if one_two == "one" and self.custom_opts.grow == true then buf_attach(self, "one", single_dual) end
         if one_two == "two" and self.custom_opts.two_grow == true then buf_attach(self, "two", single_dual) end
 
-      end -- end open window function
+    end -- end open window function
 
-    self.bufnr = {}
-    self.winnr = {}
+    if not self.bufnr then self.bufnr = {} end
+    if not self.winnr then self.winnr = {} end
 
     if self.custom_opts.dual then
         open_window("one", false)
@@ -531,7 +526,7 @@ function Window:open()
     elseif type(enter) == "string" and enter == "two" and self.custom_opts.dual then
         vim.api.nvim_set_current_win(self.winnr.two_win)
     end
- end
+end
 
 function windows.open(opts)
     opts = opts or {}
@@ -541,24 +536,23 @@ function windows.open(opts)
     for k, v in pairs(opts or {}) do
         if k:find("^view[%d]*$") then
             table.insert(view_in_keys, k)
-    if v[2] == nil and type(v) == 'string' then 
-  opts[k] = config.get_preset(v, 'views', false)
-  elseif v[2] == nil and type(v) == 'table' then
-     if not vim.tbl_isempty(v) and vim.tbl_islist(v) then assert(false, 'input opts must be kv pairs') end  
-  -- continue 
-  elseif v[2] ~= nil and type(v[1]) == 'string' and type(v[2]) == 'table' then
-     if not vim.tbl_isempty(v[2]) and vim.tbl_islist(v[2]) then assert(false, 'input opts to merge with preset must be kv pairs') end  
-      opts[k] = config.get_preset(v[1], 'views', true, v[2])
-      else 
-       assert(false, [[opts has to be: {opts} or {'view_preset', {}}]])
+            if v[2] == nil and type(v) == 'string' then
+                opts[k] = config.get_preset(v, 'views', false)
+            elseif v[2] == nil and type(v) == 'table' then
+                if not vim.tbl_isempty(v) and vim.tbl_islist(v) then assert(false, 'input opts must be kv pairs') end
+                -- continue 
+            elseif v[2] ~= nil and type(v[1]) == 'string' and type(v[2]) == 'table' then
+                if not vim.tbl_isempty(v[2]) and vim.tbl_islist(v[2]) then assert(false, 'input opts to merge with preset must be kv pairs') end
+                opts[k] = config.get_preset(v[1], 'views', true, v[2])
+            else
+                assert(false, [[opts has to be: {opts} or {'view_preset', {}}]])
+            end
+
+        end
     end
 
-  end
-end
-  
-
     for _, view in ipairs(view_in_keys) do
-      
+
         opts[view].action = opts[view .. "_action"]
         opts[view].two_action = opts[view .. "_two_action"]
 
@@ -566,7 +560,14 @@ end
         if toggle then
             for k, v in pairs(state.views) do
                 if vim.inspect(opts[view]) == vim.inspect(v.setup_opts) then
-                    windows.close_single_view(state.views[k])
+                    if state.views[k].state.is_open then
+
+                        windows.close_single_view(state.views[k])
+                    else
+
+                        state.views[k]:calculate()
+                        state.views[k]:open()
+                    end
                     return
                 end
             end
@@ -609,20 +610,34 @@ end
     end
 end
 
+function windows.close_all_views() for k, v in pairs(state.views) do windows.close_single_view(state.views[k]) end end
 
-function windows.close_all_views() 
-  for k, v in pairs(state.views) do 
-    windows.close_single_view(state.views[k])
-  end 
-end
+function windows.close_single_view(win_self)
+    local one_border_bufnr = win_self.bufnr.one_border
+    local two_border_bufnr = win_self.bufnr.two_border
+    local one_contents_bufnr = win_self.bufnr.one_contents
+    local two_contents_bufnr = win_self.bufnr.two_contents
 
+    -- if no name is passed in, it closes it by its object
 
-
- function windows.close_single_view(win_self)
+    -- 1 close window and border buffer (not buffers)
     for k, v in pairs(win_self.winnr) do if vim.api.nvim_win_is_valid(v) then vim.api.nvim_win_close(v, false) end end
+    win_self.state.is_open = false
+
+    -- shut borders regardless of on_close settings
+    if one_border_bufnr and vim.api.nvim_buf_is_valid(one_border_bufnr) then vim.api.nvim_buf_close(one_border_bufnr, false) end
+    if two_border_bufnr and vim.api.nvim_buf_is_valid(two_border_bufnr) then vim.api.nvim_buf_close(two_border_bufnr, false) end
 
     if state.recent == win_self then state.recent = {} end
-    state.views[win_self.setup_opts_pointer] = nil
+
+    if win_self.custom_opts.on_close == 'buffers' then
+        -- close content buffer only if told to   
+        if one_contents_bufnr and vim.api.nvim_buf_is_valid(one_contents_bufnr) then vim.api.nvim_buf_close(one_contents_bufnr, false) end
+        if two_contents_bufnr and vim.api.nvim_buf_is_valid(two_contents_bufnr) then vim.api.nvim_buf_close(two_contents_bufnr, false) end
+
+        -- delete object 
+        state.views[win_self.setup_opts_pointer] = nil
+    end
 
     if vim.tbl_isempty(state.views) then
         state.timer:stop()
