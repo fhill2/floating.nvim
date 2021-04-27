@@ -20,8 +20,7 @@ function Window:new(opts)
     setup_opts = vim.deepcopy(opts)
 
     -- ============================================= OPTS =================================================
-    -- otherwise obj & log padding get_defaults nil error
-    opts.margin = opts.margin or {}
+      opts.margin = opts.margin or {}
     opts.two_margin = opts.two_margin or {}
 
     actions = {action = opts.action, two_action = opts.two_action}
@@ -520,11 +519,11 @@ function Window:open()
 
     local enter = self.custom_opts.enter
     if type(enter) == "boolean" and enter == true then
-        vim.api.nvim_set_current_win(self.winnr.one_win)
+        vim.api.nvim_set_current_win(self.winnr.one_content)
     elseif type(enter) == "string" and enter == "one" then
-        vim.api.nvim_set_current_win(self.winnr.one_win)
+        vim.api.nvim_set_current_win(self.winnr.one_content)
     elseif type(enter) == "string" and enter == "two" and self.custom_opts.dual then
-        vim.api.nvim_set_current_win(self.winnr.two_win)
+        vim.api.nvim_set_current_win(self.winnr.two_content)
     end
 end
 
