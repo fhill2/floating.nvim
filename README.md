@@ -303,11 +303,15 @@ These are a list of useful variables available within action functions:
 
 | Keys               | Description                                           | Options        |
 | ------------------ | ----------------------------------------------------- | -------------- |
-| `opts.win_self`    | the table object of the current view instance (class) | {}             |
+| `opts.self`        | the table object of the current view instance (class) | {}             |
 | `opts.bufnr`       | the bufnr the action is being executed on             | NUM            |
 | `opts.winnr`       | the winnr the action is being executed on             | NUM            |
+
+<!-- not supported anymore
 | `opts.one_two`     | if `dual=true`, the index of the window               | 'one' or 'two' |
 | `opts.single_dual` | whatever you set dual key to when opening             | boolean        |
+--!>
+
 
 ## Opening multiple views
 

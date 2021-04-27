@@ -20,7 +20,7 @@ function Window:new(opts)
     setup_opts = vim.deepcopy(opts)
 
     -- ============================================= OPTS =================================================
-      opts.margin = opts.margin or {}
+    opts.margin = opts.margin or {}
     opts.two_margin = opts.two_margin or {}
 
     actions = {action = opts.action, two_action = opts.two_action}
@@ -427,6 +427,39 @@ function Window:resize_to_height(win_self, one_two, single_dual)
     if win_self.custom_opts.border then win_self.border:redraw_single(win_self, one_two, single_dual, current_opts) end
 end
 
+function Window:execute_action(one_two, action, win_self)
+    if not win_self then win_self = self end
+
+    opts = {self = win_self, bufnr = win_self.bufnr[one_two .. '_content'], winnr = win_self.winnr[one_two .. '_content']}
+
+    if not one_two then one_two = 'one' end
+
+    local action
+    if not action then
+        if one_two == "one" then
+            action = actions.action
+        else
+            action = actions.two_action
+        end
+    end
+
+    vim.api.nvim_buf_call(opts.bufnr, function()
+
+        if type(action) == "table" then
+            if config.user_actions[action[1]] then
+                config.user_actions[action[1]](opts, action[2], action[3])
+            elseif config.default_actions[action[1]] then
+                config.default_actions[action[1]](opts, action[2], action[3])
+            else
+                assert(false, "action not found in action preset table. Add action inside config action_presets table underneath defaults.")
+            end
+        elseif type(action) == "function" then
+            action(opts)
+        end
+    end)
+
+end
+
 function Window:open()
     local function open_window(one_two, single_dual)
 
@@ -473,28 +506,13 @@ function Window:open()
         -- opts for 
         opts = {win_self = self, bufnr = contents_bufnr, winnr = contents_winnr, one_two = one_two, single_dual = single_dual}
 
-        vim.api.nvim_buf_call(contents_bufnr, function()
-            vim.cmd(on_win_closed)
+        vim.api.nvim_buf_call(contents_bufnr, function() vim.cmd(on_win_closed) end)
 
-            local action
-            if one_two == "one" then
-                action = actions.action
-            else
-                action = actions.two_action
-            end
-
-            if type(action) == "table" then
-                if config.user_actions[action[1]] then
-                    config.user_actions[action[1]](opts, action[2], action[3])
-                elseif config.default_actions[action[1]] then
-                    config.default_actions[action[1]](opts, action[2], action[3])
-                else
-                    assert(false, "action not found in action preset table. Add action inside config action_presets table underneath defaults.")
-                end
-            elseif type(action) == "function" then
-                action(opts, contents_bufnr, contents_winnr)
-            end
-        end)
+        if one_two == "one" then
+            Window:execute_action('one', nil, self)
+        else
+            Window:execute_action('two', nil, self)
+        end
 
         local function buf_attach(self, one_two, single_dual)
             local contents_bufnr = self.bufnr[one_two .. "_content"]
@@ -575,7 +593,6 @@ function windows.open(opts)
         local current_window = Window:new(opts[view] or {})
         current_window:calculate()
         current_window:open()
-
         state.views[current_window.setup_opts_pointer] = current_window
         state.recent = current_window
     end

@@ -47,7 +47,7 @@ Config = {
     },
     default_actions = {
         open_file = function(opts, filepath)
-            if not filepath then
+                     if not filepath then
                 vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: filepath not specified'})
                 return
             end
