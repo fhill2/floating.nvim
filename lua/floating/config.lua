@@ -28,7 +28,7 @@ Config = {
         two_margin = {1, 1, 1, 1},
         width = 0.9,
         height = 0.3,
-        relative = 'win',
+        relative = 'editor',
         style = false,
         enter = false,
         toggle = true,
@@ -47,45 +47,62 @@ Config = {
     },
     default_actions = {
         open_file = function(opts, filepath)
-                     if not filepath then
+
+            if not filepath then
                 vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: filepath not specified'})
                 return
             end
-            local filetype = filepath:match('.*%/.*%.(.*)$')
-            local fd = vim.loop.fs_open(filepath, "r", 438, function(err_open, fd)
-                if err_open then
-                    vim.schedule(function() vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: cant find file', err_open}) end)
+
+            -- if buffer already exists
+            for k, bufnr in pairs(vim.api.nvim_list_bufs()) do
+                if vim.api.nvim_buf_get_name(bufnr) == filepath then
+                    vim.api.nvim_buf_set_option(bufnr, 'buflisted', true)
+                    vim.schedule(function() vim.api.nvim_win_set_buf(opts.winnr, bufnr) end)
+                    opts.bufnr = bufnr
                     return
-                else
-                    local stat = vim.loop.fs_fstat(fd)
-
-                    if stat.type ~= 'file' then
-                        vim.schedule(function() vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: filepath is not a file'}) end)
-                        return
-                    end
-
-                    local data = vim.loop.fs_read(fd, stat.size, 0)
-                    vim.loop.fs_close(fd)
-
-                    vim.schedule(function()
-                        vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, vim.split(data, '[\r]?\n'))
-                        vim.api.nvim_buf_set_option(opts.bufnr, 'filetype', filetype)
-
-                        if opts.one_two == 'one' and opts.win_self.custom_opts.content_height == true then
-                            opts.win_self:resize_to_height(opts.win_self, opts.one_two, opts.single_dual)
-                        elseif opts.one_two == 'two' and opts.win_self.custom_opts.two_content_height == true then
-                            opts.win_self:resize_to_height(opts.win_self, opts.one_two, opts.single_dual)
-                        end
-
-                    end)
-
                 end
+            end
+            vim.api.nvim_buf_set_name(opts.bufnr, filepath)
+            vim.api.nvim_buf_set_option(opts.bufnr, 'buftype', '')
 
-            end)
-
+            vim.schedule(function() vim.api.nvim_buf_call(opts.bufnr, function() vim.cmd([[edit!]] .. filepath) end) end)
         end,
         buf_write = function(opts, msg) vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {msg}) end,
-        open_term = function(opts, cmd) vim.schedule(function() vim.api.nvim_buf_call(opts.bufnr, function() vim.cmd([[terminal]]) end) end) end
+        open_term = function(opts, cmd) vim.schedule(function() vim.api.nvim_buf_call(opts.bufnr, function() vim.cmd([[terminal]]) end) end) end,
+        read_file_async = function()
+            -- TODO
+            -- local filetype = filepath:match('.*%/.*%.(.*)$')
+            -- local fd = vim.loop.fs_open(filepath, "r", 438, function(err_open, fd)
+            --     if err_open then
+            --         vim.schedule(function() vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: cant find file', err_open}) end)
+            --         return
+            --     else
+            --         local stat = vim.loop.fs_fstat(fd)
+
+            --         if stat.type ~= 'file' then
+            --             vim.schedule(function() vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: filepath is not a file'}) end)
+            --             return
+            --         end
+
+            --         local data = vim.loop.fs_read(fd, stat.size, 0)
+            --         vim.loop.fs_close(fd)
+
+            --         vim.schedule(function()
+            --             vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, vim.split(data, '[\r]?\n'))
+            --             vim.api.nvim_buf_set_option(opts.bufnr, 'filetype', filetype)
+
+            --             if opts.one_two == 'one' and opts.self.custom_opts.content_height == true then
+            --                 opts.self:resize_to_height(opts.self, opts.one_two, opts.single_dual)
+            --             elseif opts.one_two == 'two' and opts.self.custom_opts.two_content_height == true then
+            --                 opts.self:resize_to_height(opts.self, opts.one_two, opts.single_dual)
+            --             end
+
+            --         end)
+
+            --     end
+
+            -- end)
+        end
 
     }
 }

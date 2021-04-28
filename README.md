@@ -51,9 +51,25 @@ require "floating".open(
     }
 )
 
--- close all windows
+-- close all views/windows
 -- <C-w>w :q also works for an individual view
 require "floating".close_all()
+
+-- focus view/window by its unique name (make sure to specify the name: view1 = {name = 'my_window'})
+-- params (all optional)
+-- 1st: name of view
+-- 2nd: 'one' or 'two - if {dual = true} 'two' will focus 2nd window in the view (default 'one')
+-- 3rd: toggle: true/false - true to toggle between your last window and floating window (default 'true')
+require'floating'.focus('my_window')
+
+-- focusing the most recently opened view/window
+-- focus() without specifying a name will fallback to the most recently opened view
+require'floating'.focus()
+require'floating'.focus(nil, 'two') -- to focus 2nd window of most recently opened view
+
+-- focus cycle through all visible floating windows
+require'floating'.focus_cycle()
+
 ```
 
 ## Customization
@@ -77,7 +93,7 @@ require "floating".setup {
         height = 0.3, -- 0-1 = 0%-100%
         x = 0, -- right -, left +
         y = 0, -- down -, up +
-        relative = "win", -- 'editor'/'win' supported only
+        relative = "editor", -- 'editor'/'win'
         style = "minimal", -- 'minimal' only
         -- single & dual
         pin = "bot", -- top/topright/right/botright/bot/botleft/left/topleft
@@ -266,6 +282,7 @@ view1_two_action = {"open_term"}
 | &#x1F537; | `margin`           | like CSS - reduces window edges from outside border                                  | {1,1,1,1}                               |
 |           | `enter`            | if/what window should be focused after window open                                   | boolean                                 |
 |           | `toggle`           | calling open() on the same view config will close the opened window                  | boolean                                 |
+|           | `name`               optionally assign a unique name to your view so you can target it after open         | string                                  |
 |           | `on_close`         | when closing view, close 'buffers'(and windows) or 'windows' only (use to persist terminal etc) | 'buffers'/'windows'                |
 |           |                    | `Height Adjustment Options`                                                          |
 | &#x1F537; | `grow`             | after win open, adjusts window height to buffer contents on buffer keystroke input   | boolean                                 |

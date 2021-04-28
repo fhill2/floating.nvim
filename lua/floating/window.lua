@@ -48,7 +48,7 @@ function Window:new(opts)
         content_height = get_default(opts.content_height, config.defaults.content_height),
         two_content_height = get_default(opts.two_content_height, config.defaults.two_content_height),
         enter = get_default(opts.enter, config.defaults.enter),
-        on_close = get_default(opts.on_close, config.defaults.on_close)
+        on_close = get_default(opts.on_close, config.defaults.on_close),
     }
 
     if vim.tbl_islist(opts.margin) then custom_opts.margin = {get_default(opts.margin.top, 1), get_default(opts.margin.right, 1), get_default(opts.margin.bottom, 1), get_default(opts.margin.left, 1)} end
@@ -125,10 +125,15 @@ function Window:new(opts)
     local border
     if custom_opts.border then border = Border:new() end
 
+
+ setup_opts_pointer = tostring(setup_opts)
+
+
     return setmetatable({
+        name = opts.name or setup_opts_pointer,
         setup_opts = setup_opts,
-        setup_opts_pointer = tostring(setup_opts),
-        one_border_opts = one_border_opts,
+        setup_opts_pointer = setup_opts_pointer,
+               one_border_opts = one_border_opts,
         two_border_opts = two_border_opts,
         custom_opts = custom_opts,
         border = border,
@@ -428,20 +433,15 @@ function Window:resize_to_height(win_self, one_two, single_dual)
 end
 
 function Window:execute_action(one_two, action, win_self)
+  if not action then assert(false, 'no action specified') end
+
+
     if not win_self then win_self = self end
+  if not one_two then one_two = 'one' end
 
-    opts = {self = win_self, bufnr = win_self.bufnr[one_two .. '_content'], winnr = win_self.winnr[one_two .. '_content']}
+    opts = {self = win_self, bufnr = win_self.bufnr[one_two .. '_content'], winnr = win_self.winnr[one_two .. '_content'], one_two = one_two}
 
-    if not one_two then one_two = 'one' end
-
-    local action
-    if not action then
-        if one_two == "one" then
-            action = actions.action
-        else
-            action = actions.two_action
-        end
-    end
+  
 
     vim.api.nvim_buf_call(opts.bufnr, function()
 
@@ -487,13 +487,14 @@ function Window:open()
         end
 
         -- 3 name it
-        local name
-        if self.total_opts.relative == "win" then
-            name = string.format("%s_%s", contents_winnr, contents_bufnr)
-        elseif self.total_opts.relative == "editor" then
-            name = "global_" .. contents_bufnr
-        end
-        self.name = name
+        -- old naming, keep incase of revert
+        -- local name
+        -- if self.total_opts.relative == "win" then
+        --     name = string.format("%s_%s", contents_winnr, contents_bufnr)
+        -- elseif self.total_opts.relative == "editor" then
+        --     name = "global_" .. contents_bufnr
+        -- end
+        -- self.name = name
 
         if self.custom_opts.border then self.border:open_single(self, one_two, single_dual) end
 
@@ -501,17 +502,27 @@ function Window:open()
 
         vim.api.nvim_win_set_option(contents_winnr, "winblend", get_default(self.custom_opts.winblend, config.defaults.winblend))
 
-        local on_win_closed = string.format([[  autocmd WinClosed <buffer> ++nested ++once :silent lua require('floating/window').on_win_closed('%s')]], self.setup_opts_pointer)
+        local on_win_closed = string.format([[  autocmd WinClosed <buffer> ++nested ++once :silent lua require('floating/window').on_win_closed('%s')]], self.name)
 
         -- opts for 
-        opts = {win_self = self, bufnr = contents_bufnr, winnr = contents_winnr, one_two = one_two, single_dual = single_dual}
+      --  opts = {win_self = self, bufnr = contents_bufnr, winnr = contents_winnr, one_two = one_two, single_dual = single_dual}
 
         vim.api.nvim_buf_call(contents_bufnr, function() vim.cmd(on_win_closed) end)
 
+
+ local action
+    if not action then
         if one_two == "one" then
-            Window:execute_action('one', nil, self)
+            action = actions.action
         else
-            Window:execute_action('two', nil, self)
+            action = actions.two_action
+        end
+    end
+
+        if one_two == "one" then
+            Window:execute_action('one', action, self)
+        else
+            Window:execute_action('two', action, self)
         end
 
         local function buf_attach(self, one_two, single_dual)
@@ -591,11 +602,17 @@ function windows.open(opts)
         end
 
         local current_window = Window:new(opts[view] or {})
-        current_window:calculate()
+      
+     local where = windows._main_or_floating_cwinnr()
+     if where == 'main' then
+    state.last_main_window = vim.api.nvim_get_current_win()
+  end
+
+    current_window:calculate()
         current_window:open()
-        state.views[current_window.setup_opts_pointer] = current_window
+        state.views[current_window.name] = current_window
         state.recent = current_window
-    end
+        end
 
     -- unfortunately timer is needed due to no winresized event, but its coming soon
     -- https://github.com/neovim/neovim/pull/13589
@@ -629,21 +646,29 @@ end
 function windows.close_all_views() for k, v in pairs(state.views) do windows.close_single_view(state.views[k]) end end
 
 function windows.close_single_view(win_self)
-    local one_border_bufnr = win_self.bufnr.one_border
-    local two_border_bufnr = win_self.bufnr.two_border
-    local one_contents_bufnr = win_self.bufnr.one_contents
-    local two_contents_bufnr = win_self.bufnr.two_contents
+    local one_border_bufnr = win_self.bufnr.one_border or false
+    local two_border_bufnr = win_self.bufnr.two_border or false
+    local one_contents_bufnr = win_self.bufnr.one_contents or false
+    local two_contents_bufnr = win_self.bufnr.two_contents or false
+
 
     -- if no name is passed in, it closes it by its object
 
-    -- 1 close window and border buffer (not buffers)
-    for k, v in pairs(win_self.winnr) do if vim.api.nvim_win_is_valid(v) then vim.api.nvim_win_close(v, false) end end
+    -- 1 close windows (run for 'buffers' and 'windows')
+    for k, v in pairs(win_self.winnr) do 
+      if vim.api.nvim_win_is_valid(v) then vim.api.nvim_win_close(v, false) 
+          win_self.winnr[k] = nil
+      end 
+    end
     win_self.state.is_open = false
 
-    -- shut borders regardless of on_close settings
-    if one_border_bufnr and vim.api.nvim_buf_is_valid(one_border_bufnr) then vim.api.nvim_buf_close(one_border_bufnr, false) end
+    -- close border buffers (run for 'buffers' and 'windows')
+     if one_border_bufnr and vim.api.nvim_buf_is_valid(one_border_bufnr) then vim.api.nvim_buf_close(one_border_bufnr, false) end
     if two_border_bufnr and vim.api.nvim_buf_is_valid(two_border_bufnr) then vim.api.nvim_buf_close(two_border_bufnr, false) end
+   if one_border_bufnr then win_self.bufnr.one_border = nil end
+    if two_border_bufnr then win_self.bufnr.two_border = nil end
 
+    
     if state.recent == win_self then state.recent = {} end
 
     if win_self.custom_opts.on_close == 'buffers' then
@@ -652,7 +677,7 @@ function windows.close_single_view(win_self)
         if two_contents_bufnr and vim.api.nvim_buf_is_valid(two_contents_bufnr) then vim.api.nvim_buf_close(two_contents_bufnr, false) end
 
         -- delete object 
-        state.views[win_self.setup_opts_pointer] = nil
+        state.views[win_self.name] = nil
     end
 
     if vim.tbl_isempty(state.views) then
@@ -661,9 +686,116 @@ function windows.close_single_view(win_self)
     end
 end
 
-function windows.on_win_closed(setup_opts_pointer) windows.close_single_view(state.views[setup_opts_pointer]) end
+function windows.on_win_closed(name) windows.close_single_view(state.views[name]) end
 
-function Window:focus() end
+
+function windows._get_all_floating_winnr()
+local all_floating_windows = {}
+for view, opt in pairs(state.views) do
+  if opt.winnr.one_content then table.insert(all_floating_windows, opt.winnr.one_content) end
+    if opt.winnr.two_content then table.insert(all_floating_windows, opt.winnr.two_content) end
+  end
+  return all_floating_windows
+end
+
+function windows._main_or_floating_cwinnr()
+
+local all_floating_windows = windows._get_all_floating_winnr()
+local current_winnr = vim.api.nvim_get_current_win()
+
+local where = 'main'
+for i, winnr in ipairs(all_floating_windows) do
+if winnr == current_winnr then where = 'floating' end
+end
+return where
+end
+
+
+
+
+
+function windows.focus(name, one_two, toggle) 
+
+if not one_two then one_two = 'one' end
+if name then 
+assert(state.views[name], 'name not found in views. Make sure passed in name equals a unique name you specified when opening window in view table')
+named_winnr = state.views[name].winnr[one_two .. '_content']
+end
+
+recent_winnr = state.recent.winnr[one_two .. '_content'] 
+
+
+
+local all_floating_windows = windows._get_all_floating_winnr()
+local where = windows._main_or_floating_cwinnr()
+
+if where == 'main' then 
+state.last_main_window = vim.api.nvim_get_current_win()
+end
+
+
+if where == 'floating' then
+  if last_focused_name == name then 
+  vim.api.nvim_set_current_win(state.last_main_window)
+  else
+  vim.api.nvim_set_current_win(named_winnr)
+  end
+elseif where == 'main' then
+if not name then vim.api.nvim_set_current_win(recent_winnr) else
+vim.api.nvim_set_current_win(named_winnr)
+end
+
+end
+
+
+last_focused_name = name
+
+end
+
+
+function windows.focus_cycle(next_prev)
+
+if not next_prev then next_prev = 'next' end
+
+local inc_dec
+if next_prev == 'next' then inc_dec = 1 elseif next_prev == 'prev' then inc_dec = -1 end
+
+
+local all_floating_windows = windows._get_all_floating_winnr()
+table.sort(all_floating_windows, function(a,b) return a < b end)
+
+local where = windows._main_or_floating_cwinnr()
+
+local cwinnr = vim.api.nvim_get_current_win()
+
+
+
+if where == 'floating' then
+local start_index
+for i,winnr in ipairs(all_floating_windows) do
+if cwinnr == winnr then start_index = i + inc_dec end
+end
+
+
+-- cycle if start_index is out of bounds
+if start_index == #all_floating_windows + 1 then 
+  start_index = 1
+elseif start_index == 0 then
+  start_index = #all_floating_windows
+end
+
+
+vim.api.nvim_set_current_win(all_floating_windows[start_index])
+
+
+
+elseif where == 'main' then
+local start_index = 1
+vim.api.nvim_set_current_win(all_floating_windows[start_index])
+end
+
+
+end
 
 windows._Window = Window
 
