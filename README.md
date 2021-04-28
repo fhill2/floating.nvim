@@ -68,7 +68,7 @@ require'floating'.focus()
 require'floating'.focus(nil, 'two') -- to focus 2nd window of most recently opened view
 
 -- focus cycle through all visible floating windows
-require'floating'.focus_cycle()
+require'floating'.focus_cycle('next') -- 'next' or 'prev'
 
 ```
 
@@ -323,11 +323,9 @@ These are a list of useful variables available within action functions:
 | `opts.self`        | the table object of the current view instance (class) | {}             |
 | `opts.bufnr`       | the bufnr the action is being executed on             | NUM            |
 | `opts.winnr`       | the winnr the action is being executed on             | NUM            |
-
-<!-- not supported anymore
 | `opts.one_two`     | if `dual=true`, the index of the window               | 'one' or 'two' |
 | `opts.single_dual` | whatever you set dual key to when opening             | boolean        |
---!>
+
 
 
 ## Opening multiple views
