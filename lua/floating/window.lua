@@ -579,6 +579,7 @@ function windows.open(opts)
         end
     end
 
+local current_window
     for _, view in ipairs(view_in_keys) do
 
         opts[view].action = opts[view .. "_action"]
@@ -589,8 +590,8 @@ function windows.open(opts)
             for k, v in pairs(state.views) do
                 if vim.inspect(opts[view]) == vim.inspect(v.setup_opts) then
                     if state.views[k].state.is_open then
-
-                        windows.close_single_view(state.views[k])
+                      windows.close_single_view(state.views[k])
+                        return state.views[k]
                     else
 
                         state.views[k]:calculate()
@@ -601,7 +602,7 @@ function windows.open(opts)
             end
         end
 
-        local current_window = Window:new(opts[view] or {})
+        current_window = Window:new(opts[view] or {})
       
      local where = windows._main_or_floating_cwinnr()
      if where == 'main' then
@@ -616,31 +617,35 @@ function windows.open(opts)
 
     -- unfortunately timer is needed due to no winresized event, but its coming soon
     -- https://github.com/neovim/neovim/pull/13589
-    if not state.timer_enabled then
-        local timer = vim.loop.new_timer()
-        state.timer = timer
-        timer:start(1000, 1000, vim.schedule_wrap(function()
-            if vim.tbl_isempty(state.views) then
-                timer:stop()
-                return
-            end
-            -- 1 for window local floating windows, iterate windows and find their corresponding attached main windows
+    -- if not state.timer_enabled then
+    --     local timer = vim.loop.new_timer()
+    --     state.timer = timer
+    --     timer:start(1000, 1000, vim.schedule_wrap(function()
+    --         if vim.tbl_isempty(state.views) then
+    --             timer:stop()
+    --             return
+    --         end
+    --         -- 1 for window local floating windows, iterate windows and find their corresponding attached main windows
 
-            local windows_to_monitor = {}
-            for k, v in pairs(state.views) do
-                if v.total_opts.relative == "win" then
-                    local current_window = k
+    --         local windows_to_monitor = {}
+    --         for k, v in pairs(state.views) do
+    --             if v.total_opts.relative == "win" then
+    --                 local current_window = k
 
-                    local old_max_col = vim.deepcopy(v.custom_opts.max_col)
-                    local old_max_row = vim.deepcopy(v.custom_opts.max_row)
+    --                 local old_max_col = vim.deepcopy(v.custom_opts.max_col)
+    --                 local old_max_row = vim.deepcopy(v.custom_opts.max_row)
 
-                    state.views[k]:refresh_win_dimensions(state.views[k])
+    --                 state.views[k]:refresh_win_dimensions(state.views[k])
 
-                    if old_max_col ~= v.custom_opts.max_col or old_max_row ~= v.custom_opts.max_row then state.views[k]:resize_all(state.views[k]) end
-                end
-            end
-        end))
-    end
+    --                 if old_max_col ~= v.custom_opts.max_col or old_max_row ~= v.custom_opts.max_row then state.views[k]:resize_all(state.views[k]) end
+    --             end
+    --         end
+    --     end))
+    -- end
+
+
+
+    return current_window
 end
 
 function windows.close_all_views() for k, v in pairs(state.views) do windows.close_single_view(state.views[k]) end end
@@ -680,10 +685,10 @@ function windows.close_single_view(win_self)
         state.views[win_self.name] = nil
     end
 
-    if vim.tbl_isempty(state.views) then
-        state.timer:stop()
-        return
-    end
+    -- if vim.tbl_isempty(state.views) then
+    --     state.timer:stop()
+    --     return
+    -- end
 end
 
 function windows.on_win_closed(name) windows.close_single_view(state.views[name]) end

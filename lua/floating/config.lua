@@ -47,16 +47,16 @@ Config = {
     },
     default_actions = {
         open_file = function(opts, filepath)
-
-            if not filepath then
+                 if not filepath then
                 vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, {'Error: filepath not specified'})
                 return
             end
 
             -- if buffer already exists
-            for k, bufnr in pairs(vim.api.nvim_list_bufs()) do
-                if vim.api.nvim_buf_get_name(bufnr) == filepath then
-                    vim.api.nvim_buf_set_option(bufnr, 'buflisted', true)
+                   for k, bufnr in pairs(vim.api.nvim_list_bufs()) do
+                local iter_name = vim.api.nvim_buf_get_name(bufnr)
+                              if iter_name == filepath then
+                                  vim.api.nvim_buf_set_option(bufnr, 'buflisted', true)
                     vim.schedule(function() vim.api.nvim_win_set_buf(opts.winnr, bufnr) end)
                     opts.bufnr = bufnr
                     return
