@@ -23,7 +23,7 @@ function Window:new(opts)
     opts.margin = opts.margin or {}
     opts.two_margin = opts.two_margin or {}
 
-    actions = {action = opts.action, two_action = opts.two_action}
+    actions = {actions = opts.action, two_actions = opts.two_action}
 
     custom_opts = {
         border = get_default(opts.border, config.defaults.border),
@@ -432,8 +432,8 @@ function Window:resize_to_height(win_self, one_two, single_dual)
     if win_self.custom_opts.border then win_self.border:redraw_single(win_self, one_two, single_dual, current_opts) end
 end
 
-function Window:execute_action(one_two, action, win_self)
-  if not action then assert(false, 'no action specified') end
+function Window:execute_actions(one_two, actions, win_self)
+  if not actions then assert(false, 'no action specified') end
 
 
     if not win_self then win_self = self end
@@ -445,6 +445,7 @@ function Window:execute_action(one_two, action, win_self)
 
     vim.api.nvim_buf_call(opts.bufnr, function()
 
+  for i, action in ipairs(actions) do
         if type(action) == "table" then
             if config.user_actions[action[1]] then
                 config.user_actions[action[1]](opts, action[2], action[3])
@@ -456,6 +457,7 @@ function Window:execute_action(one_two, action, win_self)
         elseif type(action) == "function" then
             action(opts)
         end
+      end
     end)
 
 end
@@ -510,19 +512,18 @@ function Window:open()
         vim.api.nvim_buf_call(contents_bufnr, function() vim.cmd(on_win_closed) end)
 
 
- local action
-    if not action then
+ local actions
+    if self.actions then
         if one_two == "one" then
-            action = actions.action
+            actions = self.actions.actions
         else
-            action = actions.two_action
+            actions = self.actions.two_actions
         end
     end
-
         if one_two == "one" then
-            Window:execute_action('one', action, self)
+            Window:execute_actions('one', actions, self)
         else
-            Window:execute_action('two', action, self)
+            Window:execute_actions('two', actions, self)
         end
 
         local function buf_attach(self, one_two, single_dual)

@@ -227,7 +227,7 @@ require "floating".open(
 #### loading user or default actions
 
 You can load user or default actions in the same way you can load user/default views
-Currently not possible to load multiple actions at once (coming soon)
+You can also have more than 1 action run on window open()
 
 ```lua
 -- 1st arg of a custom action is 'pass through' opts. 2nd arg is your custom opts.
@@ -255,6 +255,18 @@ require "floating".open(
         view1_action = {"open_file", string.format("%s/%s", vim.fn.stdpath("config"), "init.lua")}
     }
 )
+
+-- load multiple actions on the window
+require "floating".open(
+    {
+        view1 = "user_view_1",
+        view1_action = { 
+                {"open_file", string.format("%s/%s", vim.fn.stdpath("config"), "init.lua")}, 
+                function() -- do something else here after the file has opened.. end
+    }
+)
+
+
 ```
 
 ## View Options List
