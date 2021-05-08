@@ -387,8 +387,24 @@ function Window:resize_to_height(win_self, one_two, single_dual)
     if win_self.custom_opts.border then win_self.border:redraw_single(win_self, one_two, single_dual, current_opts) end
 end
 
-function Window:execute_actions(one_two, actions, win_self, action_exit)
-    if not actions then assert(false, 'no action specified') end
+
+function Window:execute_actions(actions_exits)
+local actions_or_exits, two_actions_or_exits
+if actions_exits == 'actions' then
+actions_or_exits = self.actions.actions
+two_actions_or_exits = self.actions.two_actions
+elseif actions_exits == 'exits' then
+actions_or_exits = self.actions.exit_actions
+two_actions_or_exits = self.actions.two_exit_actions
+end
+
+if actions_or_exits then self:execute_single_actions('one', actions_or_exits, self) end
+if two_actions_or_exits and self.custom_opts.dual then self:execute_single_actions('two', actions_or_exits, self) end
+end
+
+function Window:execute_single_actions(one_two, actions)
+-- execute action only on window 1 or window 2 - one_two
+  if not actions then assert(false, 'no action specified') end
 
       
     if not win_self then win_self = self end
@@ -398,6 +414,7 @@ function Window:execute_actions(one_two, actions, win_self, action_exit)
         vim.api.nvim_buf_call(opts.bufnr, function() 
         
       
+if type(actions) == 'table' then
     local contains_table = utils.contains_table(actions)
 
     if contains_table then
@@ -406,7 +423,9 @@ function Window:execute_actions(one_two, actions, win_self, action_exit)
       elseif not contains_table then
  actions[1](opts, actions[2], actions[3]) 
  end 
-
+elseif type(actions) == 'function' then
+ actions(opts) 
+end
 
 
       end)
@@ -461,10 +480,7 @@ function Window:open()
 
         vim.api.nvim_buf_call(contents_bufnr, function() vim.cmd(on_win_closed) end)
 
-        if self.actions and one_two == 'one' then Window:execute_actions('one', self.actions.actions, self, true) end
-
-        if self.actions.two_actions and self.custom_opts.dual and one_two == "two" then Window:execute_actions('two', self.actions.two_actions, self, true) end
-
+       
         local function buf_attach(self, one_two, single_dual)
             local contents_bufnr = self.bufnr[one_two .. "_content"]
 
@@ -568,9 +584,10 @@ function windows.open(opts)
                         windows.close_single_view(state.views[k])
                         return state.views[k]
                     else
-
                         state.views[k]:calculate()
                         state.views[k]:open()
+                        state.views[k]:execute_actions('actions')
+
                     end
                     return
                 end
@@ -584,8 +601,10 @@ function windows.open(opts)
 
         current_window:calculate()
         current_window:open()
+       
         state.views[current_window.name] = current_window
         state.recent = current_window
+ current_window:execute_actions('actions')
     end
 
     -- unfortunately timer is needed due to no winresized event, but its coming soon
@@ -624,15 +643,8 @@ function windows.close_all_views()
 end
 
 function windows.close_single_view(win_self)
-    if win_self.actions.exit_actions then
-        local exit_actions = win_self.actions.exit_actions
-        Window:execute_actions('one', exit_actions, win_self, false)
-    end
+    win_self:execute_actions('exits')
 
-    if win_self.custom_opts.dual and win_self.actions.two_exit_actions then
-        local two_exit_actions = win_self.actions.two_exit_actions
-        Window:execute_actions('two', two_exit_actions, win_self, false)
-    end
 
     local one_border_bufnr = win_self.bufnr.one_border or false
     local two_border_bufnr = win_self.bufnr.two_border or false
