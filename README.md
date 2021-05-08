@@ -127,7 +127,8 @@ require "floating".setup {
         --two_margin = {1,1,1,1},
     },
     user_views = {},
-    user_actions = {}
+    user_actions = {},
+    user_exits = {},
 }
 ```
 
@@ -203,13 +204,14 @@ require "floating".open(
 
 #### specifying an action manually
 
-choosing an action (function) to be executed on the buffer after window open.
+specifying an action function to be executed on the buffer after window open.
 
 ```lua
 require "floating".open(
     {
         view1 = {width = 0.8, height = 0.4, border = true},
-        view1_action = function()
+-- 1st arg of a custom action is 'pass through' opts. 2nd arg is your custom opts.
+        view1_action = function(opts, custom_opts)
             local write = {"setting a folder marker", "<-- custom", "fold", "-->", "add some highlights", "", ""}
             -- write to buffer
             vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, write)
@@ -256,17 +258,33 @@ require "floating".open(
     }
 )
 
--- load multiple actions on the window
+-- load multiple actions on the window (syntax 1)
+you can combine action functions saved in config with anonymous functions and they be will all be executed on the buffer
 require "floating".open(
     {
         view1 = "user_view_1",
         view1_action = { 
                 {"open_file", string.format("%s/%s", vim.fn.stdpath("config"), "init.lua")}, 
-                function() -- do something else here after the file has opened.. end
+                function() -- do something else here after the file has opened.. end,
+                {'buf_write', 'writing this string to buffer'}
     }
 )
 
 
+
+```
+#### loading user or default exit functions
+exits are a function run on the window when it's closed.
+Useful for making sure anything in your custom actions are shut down the way you want.
+
+configure `exit_actions` the same way (see loading user or default actions above), change `_action` to `_exit_action`.
+```lua
+ require "floating".open(
+    {
+        view1 = {},
+        view1_action = {},
+        view1_exit_action = {},
+}
 ```
 
 ## View Options List
@@ -322,19 +340,19 @@ These Options are enabled if `dual=true`
 `max_height` doesn't affect `height`
 if `pin` is enabled, `grow direction` is disabled
 
-#### Creating your own custom Actions
+#### Creating your own custom Action functions and Exit functions
 
-Action functions are called within `nvim_buf_call()`, so any commands used in your custom Action are executed on the buffer.
-custom Action options start at arg2, 1st is opts passthrough.
+Action & Exit functions are called within `nvim_buf_call()`, so any commands used in your custom function are executed on the buffer.
+custom function options start at arg2, 1st is opts passthrough.
 source code for default actions are in `floating/config`
 
-These are a list of useful variables available within action functions:
+These are a list of useful variables available within action & exit functions:
 
 | Keys               | Description                                           | Options        |
 | ------------------ | ----------------------------------------------------- | -------------- |
 | `opts.self`        | the table object of the current view instance (class) | {}             |
-| `opts.bufnr`       | the bufnr the action is being executed on             | NUM            |
-| `opts.winnr`       | the winnr the action is being executed on             | NUM            |
+| `opts.bufnr`       | the bufnr the function is being executed on             | NUM            |
+| `opts.winnr`       | the winnr the function is being executed on             | NUM            |
 | `opts.one_two`     | if `dual=true`, the index of the window               | 'one' or 'two' |
 | `opts.single_dual` | whatever you set dual key to when opening             | boolean        |
 

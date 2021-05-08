@@ -84,4 +84,11 @@ utils.read_file_async = function(filepath, callback)
     end)
 end
 
+utils.contains_table = function(t)
+for i, v in ipairs(t) do 
+if type(v) == 'table' then return true end
+return false
+end
+end
+
 return utils
