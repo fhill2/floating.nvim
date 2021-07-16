@@ -1,13 +1,34 @@
 local utils = require 'floating/utils'
 local get_default = utils.get_default
+local log = require'floating/log'
 
 Config = {
     defaults = {
-        border = true, border_thickness = { 1, 1, 1, 1 }, borderchars = { '─', '│', '─', '│', '╭', '╮', '╯', '╰' }, title = 'win1', two_title = 'win2', x = 0, y = 0, layout = 'vertical', pin = false, dual = false, grow = false, two_grow = false, max_height = 40, two_max_height = 40, grow_direction = false, two_grow_direction = false, winblend = 15, split = 0.5, gap = 0, content_height = false, two_content_height = false, margin = { 1, 1, 1, 1 }, two_margin = { 1, 1, 1, 1 },
-        width = 0.9, height = 0.3, relative = 'editor', style = false, enter = false, toggle = true, on_close = 'windows'
+
+        x = 0, 
+        y = 0, 
+               pin = false, 
+             grow = false, 
+        
+        max_height = 40, 
+        two_max_height = 40, 
+        grow_direction = false, 
+        two_grow_direction = false, 
+        winblend = 15, 
+        split = 0.5,   
+        content_height = false,    
+        margin = { 1, 1, 1, 1 },    
+        width = 0.9, 
+        height = 0.3, 
+        relative = 'editor', 
+        style = false, 
+        enter = false, 
+        toggle = true, 
+        on_close = 'windows'
     }, user_views = {}, user_actions = {}, user_exits = {}, default_views = { single_auto_grow = {}, center = { width = 0.8, height = 0.8 }, content_auto = { content_height = true, grow = true }, dual_content_auto = { content_height = true, two_content_height = true, grow = true, two_grow = true }, dual_bot = {} }, default_actions = {
+
         open_file = function(opts, filepath)
-            if not filepath then
+                     if not filepath then
                 vim.api.nvim_buf_set_lines(opts.bufnr, 0, -1, false, { 'Error: filepath not specified' })
                 return
             end
@@ -65,6 +86,7 @@ Config = {
 }
 
 function Config.setup(opts)
+
     opts = opts or {}
     for k, v in pairs(opts.defaults) do Config.defaults[k] = v end
 
