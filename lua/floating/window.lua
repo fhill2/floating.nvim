@@ -1,5 +1,6 @@
 local windows = {}
 
+local log = require'log1'
 local utils = require "floating/utils"
 local get_default = utils.get_default
 local ternary = utils.ternary
@@ -16,74 +17,47 @@ Window.__index = Window
 function Window:new(opts)
     opts = opts or {}
 
-    --- ============= TOGGLE WALL/BLOCK ===============
-    setup_opts = vim.deepcopy(opts)
+       setup_opts = vim.deepcopy(opts)
 
     -- ============================================= OPTS =================================================
     opts.margin = opts.margin or {}
     opts.two_margin = opts.two_margin or {}
-       actions = { actions = opts.actions, two_actions = opts.two_actions, exit_actions = opts.exit_actions, two_exit_actions = opts.two_exit_actions }
+       actions = { actions = opts.actions, exit_actions = opts.exit_actions }
 
     custom_opts = {
-        border = get_default(opts.border, config.defaults.border), border_thickness = get_default(opts.border_thickness, config.defaults.border_thickness), borderchars = get_default(opts.borderchars, config.defaults.borderchars), title = get_default(opts.title, config.defaults.title), two_title = get_default(opts.two_title, config.defaults.two_title), x = get_default(opts.x, config.defaults.x), y = get_default(opts.y, config.defaults.y), layout = get_default(opts.layout, config.defaults.layout),
-        pin = get_default(opts.pin, config.defaults.pin), dual = get_default(opts.dual, config.defaults.dual), grow = get_default(opts.grow, config.defaults.grow), two_grow = get_default(opts.two_grow, config.defaults.two_grow), max_height = get_default(opts.max_height, config.defaults.max_height), two_max_height = get_default(opts.two_max_height, config.defaults.two_max_height), grow_direction = get_default(opts.grow_direction, config.defaults.grow_direction),
-        -- two_grow_direction = get_default(opts.two_grow_direction, config.defaults.two_grow_direction),
-        winblend = get_default(opts.winblend, config.defaults.winblend), split = get_default(opts.split, config.defaults.split), gap = get_default(opts.gap, config.defaults.gap), content_height = get_default(opts.content_height, config.defaults.content_height), two_content_height = get_default(opts.two_content_height, config.defaults.two_content_height), enter = get_default(opts.enter, config.defaults.enter), on_close = get_default(opts.on_close, config.defaults.on_close)
+        border = get_default(opts.border, config.defaults.border), 
+        border_thickness = get_default(opts.border_thickness, config.defaults.border_thickness), 
+        borderchars = get_default(opts.borderchars, config.defaults.borderchars), 
+        title = get_default(opts.title, config.defaults.title), 
+             x = get_default(opts.x, config.defaults.x), 
+        y = get_default(opts.y, config.defaults.y), 
+        layout = get_default(opts.layout, config.defaults.layout),
+        pin = get_default(opts.pin, config.defaults.pin),        
+        grow = get_default(opts.grow, config.defaults.grow), 
+               max_height = get_default(opts.max_height, config.defaults.max_height), 
+               grow_direction = get_default(opts.grow_direction, config.defaults.grow_direction),
+           winblend = get_default(opts.winblend, config.defaults.winblend), 
+        split = get_default(opts.split, config.defaults.split), 
+        gap = get_default(opts.gap, config.defaults.gap), 
+        content_height = get_default(opts.content_height, config.defaults.content_height), 
+       
+        enter = get_default(opts.enter, config.defaults.enter), 
+        on_close = get_default(opts.on_close, config.defaults.on_close)
     }
 
     if vim.tbl_islist(opts.margin) then custom_opts.margin = { get_default(opts.margin.top, 1), get_default(opts.margin.right, 1), get_default(opts.margin.bottom, 1), get_default(opts.margin.left, 1) } end
 
-    if vim.tbl_islist(opts.two_margin) then custom_opts.two_margin = { get_default(opts.two_margin.top, 1), get_default(opts.two_margin.right, 1), get_default(opts.two_margin.bottom, 1), get_default(opts.two_margin.left, 1) } end
-
+    
     if not vim.tbl_islist(opts.margin) then custom_opts.margin = { top = get_default(opts.margin.top, 1), right = get_default(opts.margin.right, 1), bottom = get_default(opts.margin.bottom, 1), left = get_default(opts.margin.left, 1) } end
 
-    if not vim.tbl_islist(opts.two_margin) then custom_opts.two_margin = { top = get_default(opts.two_margin.top, 1), right = get_default(opts.two_margin.right, 1), bottom = get_default(opts.two_margin.bottom, 1), left = get_default(opts.two_margin.left, 1) } end
-
+   
     -- TODO: VALIDATE BORDER OPTS and save back to custom_opts
 
-    local border_default_thickness = { top = 1, right = 1, bot = 1, left = 1 }
-    local border_options = {}
-
-    if custom_opts.border then
-        if type(custom_opts.border_thickness) == "boolean" or vim.tbl_isempty(custom_opts.border_thickness) then
-            border_options.border_thickness = border_default_thickness
-        elseif #custom_opts.border_thickness == 4 then
-            border_options.border_thickness = { top = utils.bounded(custom_opts.border_thickness[1], 0, 1), right = utils.bounded(custom_opts.border_thickness[2], 0, 1), bot = utils.bounded(custom_opts.border_thickness[3], 0, 1), left = utils.bounded(custom_opts.border_thickness[4], 0, 1) }
-        end
-    end
-
-    local b_top, b_right, b_bot, b_left, b_topleft, b_topright, b_botright, b_botleft
-    if custom_opts.borderchars == nil then
-        b_top, b_right, b_bot, b_left, b_topleft, b_topright, b_botright, b_botleft = "═", "║", "═", "║", "╔", "╗", "╝", "╚"
-    elseif #custom_opts.borderchars == 1 then
-        local b_char = custom_opts.borderchars[1]
-        b_top, b_right, b_bot, b_left, b_topleft, b_topright, b_botright, b_botleft = b_char, b_char, b_char, b_char, b_char, b_char, b_char, b_char
-    elseif #custom_opts.borderchars == 2 then
-        local b_char = custom_opts.borderchars[1]
-        local c_char = custom_opts.borderchars[2]
-        b_top, b_right, b_bot, b_left, b_topleft, b_topright, b_botright, b_botleft = b_char, b_char, b_char, b_char, c_char, c_char, c_char, c_char
-    elseif #custom_opts.borderchars == 8 then
-        b_top, b_right, b_bot, b_left, b_topleft, b_topright, b_botright, b_botleft = unpack(custom_opts.borderchars)
-    else
-        error(string.format('Not enough arguments for "borderchars"'))
-    end
-
-    border_options.top = b_top
-    border_options.bot = b_bot
-    border_options.right = b_right
-    border_options.left = b_left
-    border_options.topleft = b_topleft
-    border_options.topright = b_topright
-    border_options.botright = b_botright
-    border_options.botleft = b_botleft
-
-    custom_opts.borderchars = border_options.borderchars
-    custom_opts.border_thickness = border_options.border_thickness
-
-    one_border_opts = vim.tbl_extend("keep", border_options, { title = get_default(opts.title, config.defaults.title) })
-    two_border_opts = vim.tbl_extend("keep", border_options, { title = get_default(opts.two_title, config.defaults.two_title) })
-
-    total_opts_init = { width = get_default(opts.width, config.defaults.width), height = get_default(opts.height, config.defaults.height), relative = get_default(opts.relative, config.defaults.relative), anchor = "NW" }
+       total_opts_init = { 
+       width = get_default(opts.width, config.defaults.width), 
+       height = get_default(opts.height, config.defaults.height), 
+       relative = get_default(opts.relative, config.defaults.relative), 
+       anchor = "NW" }
 
     local style = get_default(opts.style, config.defaults.style)
     if style then total_opts_init.style = "minimal" end
@@ -95,12 +69,18 @@ function Window:new(opts)
     assert(total_opts_init.width > 0, "LTL ERROR: view width needs to be 0 - 1 number")
     assert(total_opts_init.height > 0, "LTL ERROR: view height needs to be 0 - 1 number")
 
-    local border
-    if custom_opts.border then border = Border:new() end
-
     setup_opts_pointer = tostring(setup_opts)
 
-    return setmetatable({ name = opts.name or setup_opts_pointer, setup_opts = setup_opts, setup_opts_pointer = setup_opts_pointer, one_border_opts = one_border_opts, two_border_opts = two_border_opts, custom_opts = custom_opts, border = border, state = { is_open = true }, total_opts_init = total_opts_init, actions = actions }, self)
+    return setmetatable({ 
+      name = opts.name or setup_opts_pointer, 
+      setup_opts = setup_opts, 
+      setup_opts_pointer = setup_opts_pointer, 
+      one_border_opts = one_border_opts, 
+      two_border_opts = two_border_opts, 
+      custom_opts = custom_opts, 
+      border = border, state = { is_open = true }, 
+      total_opts_init = total_opts_init, 
+      actions = actions }, self)
 end
 
 function Window:calculate(win_self)
@@ -277,140 +257,16 @@ function Window:calculate(win_self)
     -- end calculate
 end
 
-function Window:refresh_win_dimensions(win_self)
-    if win_self.total_opts_init.relative == "win" then
-        win_self.custom_opts.max_col = vim.api.nvim_call_function("winwidth", { win_self.total_opts_init.win })
-
-        win_self.custom_opts.max_row = vim.api.nvim_call_function("winheight", { win_self.total_opts_init.win })
-    end
-end
-
-function Window:resize_all(win_self)
-    -- if win_self then win_self = self end
-
-    win_self.calculate(win_self)
-
-    if win_self.custom_opts.border then win_self.border:redraw_all(win_self) end
-
-    if win_self.custom_opts.dual == false then
-        vim.api.nvim_win_set_config(win_self.winnr.one_content, win_self.total_opts)
-    elseif self.custom_opts.dual == true then
-        vim.api.nvim_win_set_config(win_self.winnr.one_content, win_self.one_opts)
-        vim.api.nvim_win_set_config(win_self.winnr.two_content, win_self.two_opts)
-    end
-end
-
-function Window:resize_to_height(win_self, one_two, single_dual)
-    contents_bufnr = win_self.bufnr[one_two .. "_content"]
-    buf_contents = vim.api.nvim_buf_get_lines(contents_bufnr, 0, -1, false)
-    line_count = #buf_contents
-    local max_height
-    if one_two == "one" then
-        max_height = win_self.custom_opts.max_height
-        opts_direction = win_self.custom_opts.grow_direction
-    else
-        max_height = win_self.custom_opts.two_max_height
-    end
-    -- limit by max height
-    if line_count > max_height then line_count = max_height end
-
-    local other_win
-    if one_two == "one" then
-        other_win = "two"
-    else
-        other_win = "one"
-    end
-
-    local height_to_move, current_opts, other_win_opts, other_content_winnr, content_winnr
-    if single_dual == true then
-        current_opts = win_self.total_opts
-    elseif single_dual == false then
-        current_opts = win_self[one_two .. "_opts"]
-
-        other_win_opts = win_self[other_win .. "_opts"]
-
-        other_content_winnr = win_self.winnr[other_win .. "_content"]
-    end
-
-    content_winnr = win_self.winnr[one_two .. "_content"]
-
-    height_to_move = current_opts.height - line_count
-
-    --- OPTS above here
-
-    local pin = win_self.custom_opts.pin
-
-    height_col = { top = "down", topright = "down", right = "down", botright = "up", bot = "up", botleft = "up", left = "down", topleft = "down", nopin = "nopin" }
-
-    local direction = height_col[pin]
-
-    opts_direction = win_self.custom_opts.grow_direction
-
-    if direction == nil then
-        if type(opts_direction) == "string" and opts_direction ~= false then
-            direction = opts_direction
-        else
-            win_self:refresh_win_dimensions(win_self)
-            if win_self.total_opts.row > win_self.custom_opts.max_row / 2 then
-                direction = "up"
-            else
-                direction = "down"
-            end
-        end
-    end
-
-    -- single window top side pins
-    if direction == "down" then
-        current_opts.height = line_count
-
-        if one_two == "one" and single_dual == false and win_self.custom_opts.layout ~= "horizontal" then
-            other_win_opts.row = other_win_opts.row - height_to_move
-            vim.api.nvim_win_set_config(other_content_winnr, other_win_opts)
-            if win_self.custom_opts.border then win_self.border:redraw_single(win_self, other_win, single_dual, other_win_opts) end
-        end
-    end
-
-    -- single window bot pins
-    if direction == "up" then
-        current_opts.row = current_opts.row + height_to_move
-        current_opts.height = line_count
-        if one_two == "two" and single_dual == false and win_self.custom_opts.layout ~= "horizontal" then
-            other_win_opts.row = other_win_opts.row + height_to_move
-
-            vim.api.nvim_win_set_config(other_content_winnr, other_win_opts)
-            if win_self.custom_opts.border then win_self.border:redraw_single(win_self, other_win, single_dual, other_win_opts) end
-        end
-    end
-
-    vim.api.nvim_win_set_config(content_winnr, current_opts)
-
-    if win_self.custom_opts.border then win_self.border:redraw_single(win_self, one_two, single_dual, current_opts) end
-end
-
-
-function Window:execute_actions(actions_exits)
-local actions_or_exits, two_actions_or_exits
-if actions_exits == 'actions' then
-actions_or_exits = self.actions.actions
-two_actions_or_exits = self.actions.two_actions
-elseif actions_exits == 'exits' then
-actions_or_exits = self.actions.exit_actions
-two_actions_or_exits = self.actions.two_exit_actions
-end
-
-if actions_or_exits then self:execute_single_actions('one', actions_or_exits, self) end
-if two_actions_or_exits and self.custom_opts.dual then self:execute_single_actions('two', actions_or_exits, self) end
-end
-
-function Window:execute_single_actions(one_two, actions)
+function Window:execute_single_actions(actions)
 -- execute action only on window 1 or window 2 - one_two
   if not actions then assert(false, 'no action specified') end
 
       
-    if not win_self then win_self = self end
-    if not one_two then one_two = 'one' end
-
-    opts = { self = win_self, bufnr = win_self.bufnr[one_two .. '_content'], winnr = win_self.winnr[one_two .. '_content'], one_two = one_two }
+  
+    opts = { self = win_self, 
+    bufnr = win_self.bufnr[one_two .. '_content'], 
+    winnr = win_self.winnr[one_two .. '_content'], 
+    one_two = one_two }
         vim.api.nvim_buf_call(opts.bufnr, function() 
         
       
@@ -576,24 +432,30 @@ function windows.open(opts)
         opts[view].exit_actions = opts[view .. '_exit_action']
         opts[view].two_exit_actions = opts[view .. 'two_exit_action']
 
+
+ --- ============= TOGGLE WALL/BLOCK ===============
+
         local toggle = get_default(opts[view].toggle, config.defaults.toggle)
-        if toggle then
+
+
+                 log.info('toggle exists')
             for k, v in pairs(state.views) do
-                if vim.inspect(opts[view]) == vim.inspect(v.setup_opts) then
-                    if state.views[k].state.is_open then
-                        windows.close_single_view(state.views[k])
+ if vim.inspect(opts[view]) == vim.inspect(v.setup_opts) then
+
+                                   log.info('MATCHED PREV CONFIG') 
+                  if state.views[k].state.is_open and toggle then
+                    windows.close_single_view(state.views[k]) end
                         return state.views[k]
                     else
-                        state.views[k]:calculate()
-                        state.views[k]:open()
+                      log.info('executing actions')
+                       -- state.views[k]:calculate()
+                       -- state.views[k]:open()
                         state.views[k]:execute_actions('actions')
 
                     end
                     return
                 end
-            end
-        end
-
+        log.info('NEW WINDOW')
         current_window = Window:new(opts[view] or {})
 
         local where = windows._main_or_floating_cwinnr()
@@ -643,6 +505,7 @@ function windows.close_all_views()
 end
 
 function windows.close_single_view(win_self)
+  log.info('close single view ran')
     win_self:execute_actions('exits')
 
 
@@ -677,7 +540,8 @@ function windows.close_single_view(win_self)
 
         -- delete object 
         state.views[win_self.name] = nil
-    end
+    log.info(state.views)
+      end
 
     -- if vim.tbl_isempty(state.views) then
     --     state.timer:stop()
