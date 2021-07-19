@@ -1,6 +1,6 @@
 I have stopped maintaing this but I'll leave it available here for anyone still using it.
 
-A lot of the features in this repo have been made redundant by upgrades to nvim win API, and with plugins like nui.nvim now available I don't see a need to maintain this!
+A lot of the features in this repo have been made redundant by upgrades to nvim win API, and with plugins like nui.nvim now available I don't see a need to maintain this.
 
 If you are looking for a starting point to implement your own custom UI features I would check out these projects instead:
 
